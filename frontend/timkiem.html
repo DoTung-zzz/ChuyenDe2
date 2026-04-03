@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết Quả Tìm Kiếm - Ẩm Thực 3 Miền</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <a href="index.html" style="color: inherit; text-decoration: none;"><i class="fas fa-utensils"></i></a>
+            </div>
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" placeholder="Tìm kiếm món ngon..." id="search-input">
+            </div>
+        </div>
+        <div class="header-center">
+            <a href="index.html" class="nav-item"><i class="fas fa-home"></i></a>
+            <a href="dacsan.html" class="nav-item"><i class="fas fa-star"></i></a>
+        </div>
+        <div class="header-right">
+            <div class="action-btn"><i class="fas fa-bell"></i></div>
+            <div class="user-profile" id="userAvatarBtn">
+                <img src="https://i.pravatar.cc/150?u=user" alt="User Avatar" class="avatar-small">
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="profile.html"><i class="fas fa-user"></i> Xem thông tin người dùng</a>
+                    <a href="settings.html"><i class="fas fa-cog"></i> Cài đặt</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="login.html" class="logout-item"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <aside class="sidebar-left">
+            <h3 style="padding: 10px 16px;">Bộ lọc</h3>
+            <ul class="sidebar-menu">
+                <li class="menu-item">
+                    <div class="menu-icon specialty"><i class="fas fa-filter"></i></div>
+                    <span>Tất cả</span>
+                </li>
+                <li class="menu-item">
+                    <div class="menu-icon specialty" style="background: var(--fb-blue);"><i class="fas fa-map-marker-alt"></i></div>
+                    <span>Miền Bắc</span>
+                </li>
+                <li class="menu-item">
+                    <div class="menu-icon specialty" style="background: #45bd62;"><i class="fas fa-map-marker-alt"></i></div>
+                    <span>Miền Trung</span>
+                </li>
+                <li class="menu-item">
+                    <div class="menu-icon specialty" style="background: #f3425f;"><i class="fas fa-map-marker-alt"></i></div>
+                    <span>Miền Nam</span>
+                </li>
+            </ul>
+        </aside>
+
+        <section class="feed-container">
+            <div style="margin-bottom: 20px;">
+                <h1 id="search-title">Kết quả tìm kiếm cho: <span id="query-text" style="color: var(--primary-color);">...</span></h1>
+                <p id="search-count" style="color: grey; font-size: 14px; margin-top: 5px;">Tìm thấy 0 kết quả</p>
+            </div>
+
+            <div id="results-list">
+                <!-- Search results will be injected here -->
+                <div style="padding: 40px; text-align: center;" id="loading-results">
+                    <i class="fas fa-spinner fa-spin fa-3x" style="color: var(--primary-color);"></i>
+                    <p style="margin-top: 15px;">Đang tìm món ngon...</p>
+                </div>
+                <div id="no-results" style="display: none; text-align: center; padding: 40px;">
+                    <i class="fas fa-search-minus fa-3x" style="color: #ddd;"></i>
+                    <p style="margin-top: 15px; color: grey;">Không tìm thấy món nào phù hợp với từ khóa của bạn.</p>
+                </div>
+            </div>
+        </section>
+
+        <aside class="sidebar-right">
+            <div class="card">
+                <h3>Gợi ý tìm kiếm</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px;">
+                    <span class="btn-view-recipe" style="cursor: pointer;">Phở Hà Nội</span>
+                    <span class="btn-view-recipe" style="cursor: pointer;">Bánh Xèo</span>
+                    <span class="btn-view-recipe" style="cursor: pointer;">Bún Bò Huế</span>
+                    <span class="btn-view-recipe" style="cursor: pointer;">Cà Phê Muối</span>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script src="/static/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q') || '';
+            document.getElementById('query-text').innerText = query;
+            
+            // Assume performSearch is a global function in script.js
+            if (typeof performSearch === 'function') {
+                performSearch(query);
+            }
+        });
+    </script>
+</body>
+</html>

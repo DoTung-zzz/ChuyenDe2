@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đặc Sản Vùng Miền - Ẩm Thực 3 Miền</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Shared Header (Simplified for this page) -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <a href="index.html" style="color: inherit; text-decoration: none;"><i class="fas fa-utensils"></i></a>
+            </div>
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" placeholder="Tìm đặc sản..." id="search-input">
+            </div>
+        </div>
+        <div class="header-center">
+            <a href="index.html" class="nav-item" title="Trang chủ"><i class="fas fa-home"></i></a>
+            <a href="dacsan.html" class="nav-item active" title="Đặc sản"><i class="fas fa-star"></i></a>
+        </div>
+        <div class="header-right">
+            <div class="action-btn"><i class="fas fa-bell"></i></div>
+            <div class="user-profile" id="userAvatarBtn">
+                <img src="https://i.pravatar.cc/150?u=user" alt="User Avatar" class="avatar-small">
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="profile.html"><i class="fas fa-user"></i> Xem thông tin người dùng</a>
+                    <a href="settings.html"><i class="fas fa-cog"></i> Cài đặt</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="login.html" class="logout-item"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Sidebar Left -->
+        <aside class="sidebar-left">
+            <h2 style="padding: 10px 16px; font-size: 20px;">Khám phá vùng miền</h2>
+            <ul class="sidebar-menu">
+                <li class="menu-item">
+                    <div class="menu-icon" style="background-color: #f3425f;"><i class="fas fa-map-marker-alt"></i></div>
+                    <span>Miền Bắc</span>
+                </li>
+                <li class="menu-item">
+                    <div class="menu-icon" style="background-color: #45bd62;"><i class="fas fa-map-marker-alt"></i></div>
+                    <span>Miền Trung</span>
+                </li>
+                <li class="menu-item">
+                    <div class="menu-icon" style="background-color: #1877f2;"><i class="fas fa-map-marker-alt"></i></div>
+                    <span>Miền Nam</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Dynamic Content -->
+        <section class="feed-container">
+            <h1 style="margin-bottom: 24px;">Đặc Sản Việt Nam</h1>
+            <div id="post-list" class="post-list">
+                <!-- Posts filtered by region will be loaded here -->
+                <div style="padding: 40px; text-align: center;">
+                    <i class="fas fa-map-marked-alt fa-3x" style="color: #ddd; margin-bottom: 10px;"></i>
+                    <p style="color: #666;">Chọn một vùng miền để khám phá tinh hoa ẩm thực!</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="/static/script.js"></script>
+</body>
+</html>

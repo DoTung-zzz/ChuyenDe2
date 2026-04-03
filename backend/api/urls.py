@@ -15,5 +15,6 @@ urlpatterns = [
     path('auth/login/', views.login, name='login'),
     path('auth/me/', views.me, name='me'),
     path('public/cuisine-data/', views.public_cuisine_data, name='public_cuisine_data'),
+    path('admin/stats/', views.admin_stats, name='admin_stats'),
     path('', include(router.urls)),
 ]

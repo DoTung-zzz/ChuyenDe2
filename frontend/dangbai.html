@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Bài Món Ăn - Ẩm Thực 3 Miền</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .form-container {
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--divider-color);
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            border-color: var(--primary-color);
+        }
+        .image-preview-container {
+            width: 100%;
+            height: 250px;
+            border: 2px dashed var(--divider-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .image-preview-container:hover {
+            border-color: var(--primary-color);
+        }
+        .image-preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .btn-submit {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(247, 99, 12, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(247, 99, 12, 0.3);
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <a href="index.html" style="color: inherit; text-decoration: none;"><i class="fas fa-utensils"></i></a>
+            </div>
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" placeholder="Tìm kiếm món ngon..." id="search-input">
+            </div>
+        </div>
+        <div class="header-center">
+            <a href="index.html" class="nav-item"><i class="fas fa-home"></i></a>
+            <a href="dacsan.html" class="nav-item"><i class="fas fa-star"></i></a>
+        </div>
+        <div class="header-right">
+            <div class="action-btn"><i class="fas fa-bell"></i></div>
+            <div class="user-profile" id="userAvatarBtn">
+                <img src="https://i.pravatar.cc/150?u=user" alt="User Avatar" class="avatar-small">
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="profile.html"><i class="fas fa-user"></i> Xem thông tin người dùng</a>
+                    <a href="settings.html"><i class="fas fa-cog"></i> Cài đặt</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="login.html" class="logout-item"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <aside class="sidebar-left">
+            <ul class="sidebar-menu">
+                <li class="menu-item"><a href="index.html" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px;"><i class="fas fa-arrow-left"></i> <span>Quay lại trang chủ</span></a></li>
+                <li class="menu-item"><div class="menu-icon specialty"><i class="fas fa-star"></i></div> <span>Đặc sản vùng miền</span></li>
+                <li class="menu-item"><div class="menu-icon saved"><i class="fas fa-bookmark"></i></div> <span>Món đã lưu</span></li>
+            </ul>
+        </aside>
+
+        <section class="feed-container">
+            <div class="card form-container">
+                <h1 style="margin-bottom: 24px; text-align: center;">Chia sẻ món ngon miền Nam</h1>
+                <form id="create-post-form">
+                    <div class="form-group">
+                        <label for="title">Tên món ăn</label>
+                        <input type="text" id="title" placeholder="Ví dụ: Phở bò Hà Nội, Bún bò Huế..." required>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="region">Vùng miền</label>
+                            <select id="region" required>
+                                <option value="">Chọn vùng miền</option>
+                                <!-- Regions will be loaded from API -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="thumbnail">Link hình ảnh món ăn</label>
+                            <input type="text" id="thumbnail" placeholder="Dán link ảnh tiêu biểu..." required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Xem trước hình ảnh</label>
+                        <div class="image-preview-container" id="image-preview">
+                            <i class="fas fa-image fa-3x" style="color: var(--divider-color);"></i>
+                            <p style="margin-left: 15px; color: grey;">Chưa có ảnh</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="content">Giới thiệu ngắn gọn / Câu chuyện văn hóa</label>
+                        <textarea id="content" rows="3" placeholder="Chia sẻ về nguồn gốc hoặc ý nghĩa của món ăn này..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ingredients">Nguyên liệu cần chuẩn bị</label>
+                        <textarea id="ingredients" rows="5" placeholder="Mỗi nguyên liệu một dòng..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recipe">Các bước thực hiện</label>
+                        <textarea id="recipe" rows="8" placeholder="Bước 1: ... &#10;Bước 2: ..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Đăng bài ngay <i class="fas fa-paper-plane" style="margin-left: 8px;"></i></button>
+                    <p id="submit-status" style="margin-top: 15px; text-align: center; display: none;"></p>
+                </form>
+            </div>
+        </section>
+
+        <aside class="sidebar-right">
+            <div class="card">
+                <h3>Mẹo nhỏ cho bạn</h3>
+                <ul class="sidebar-menu" style="margin-top: 15px;">
+                    <li style="margin-bottom: 15px; font-size: 14px; color: var(--text-secondary);">
+                        <i class="fas fa-lightbulb" style="color: #f1c40f;"></i> Hãy sử dụng hình ảnh chất lượng cao để bài viết nổi bật hơn.
+                    </li>
+                    <li style="margin-bottom: 15px; font-size: 14px; color: var(--text-secondary);">
+                        <i class="fas fa-lightbulb" style="color: #f1c40f;"></i> Mô tả kỹ các bước thực hiện giúp người xem tham khảo dễ dàng hơn.
+                    </li>
+                </ul>
+            </div>
+        </aside>
+    </main>
+
+    <script src="/static/script.js"></script>
+    <script>
+        document.getElementById('thumbnail').addEventListener('input', function() {
+            const preview = document.getElementById('image-preview');
+            const url = this.value;
+            if (url) {
+                preview.innerHTML = `<img src="${url}" alt="Preview" onerror="this.innerHTML='Lỗi tải ảnh'; this.style.color='red';">`;
+            } else {
+                preview.innerHTML = `
+                    <i class="fas fa-image fa-3x" style="color: var(--divider-color);"></i>
+                    <p style="margin-left: 15px; color: grey;">Chưa có ảnh</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

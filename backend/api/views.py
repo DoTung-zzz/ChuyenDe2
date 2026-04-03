@@ -107,6 +107,20 @@ class ReportViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 @api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def admin_stats(request):
+    if request.user.role and request.user.role.role_name != 'Admin':
+        return Response({"error": "Unauthorized"}, status=403)
+        
+    data = {
+        'total_users': User.objects.count(),
+        'total_posts': Post.objects.count(),
+        'total_reports': Report.objects.filter(process_status='Pending').count(),
+        'trending_dishes': Post.objects.filter(status='Active').order_by('-created_at')[:5].values('title', 'region__region_name')
+    }
+    return Response(data)
+
+@api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def public_cuisine_data(request):
     """
