@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.db.models import Avg
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report
 from .serializers import (
@@ -39,10 +40,19 @@ def me(request):
     return Response(UserSerializer(request.user).data)
 
 # ViewSets
-class RegionViewSet(viewsets.ReadOnlyModelViewSet):
+class RegionViewSet(viewsets.ModelViewSet):
     queryset = Region.objects.all()
     serializer_class = RegionSerializer
-    permission_classes = [permissions.AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]
+
+class UserAdminViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
@@ -50,10 +60,14 @@ class PostViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        # Allow filtering by region and status
         queryset = Post.objects.all()
         region_id = self.request.query_params.get('region', None)
-        post_status = self.request.query_params.get('status', 'Active')
+        
+        # If Admin, they might want to see all statuses
+        if self.request.user.is_authenticated and self.request.user.role and self.request.user.role.role_name == 'Admin':
+            post_status = self.request.query_params.get('status', None)
+        else:
+            post_status = self.request.query_params.get('status', 'Active')
         
         if post_status:
             queryset = queryset.filter(status=post_status)
@@ -65,18 +79,34 @@ class PostViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(contributor=self.request.user)
 
+    def update(self, request, *args, **kwargs):
+        # Allow admins to update status even if they aren't the author
+        if request.user.role and request.user.role.role_name == 'Admin':
+            return super().update(request, *args, **kwargs)
+        return super().update(request, *args, **kwargs)
+
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['post', 'user']
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        
+    def destroy(self, request, *args, **kwargs):
+        comment = self.get_object()
+        if comment.user != request.user and request.user.role.role_name != 'Admin':
+            return Response({"error": "You do not have permission to delete this comment."}, status=403)
+        return super().destroy(request, *args, **kwargs)
 
 class RatingViewSet(viewsets.ModelViewSet):
     queryset = Rating.objects.all()
     serializer_class = RatingSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['post', 'user']
 
     def perform_create(self, serializer):
         # Update if already exists, else create

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chi Tiết Món Ăn - Ẩm Thực 3 Miền</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2.5">
     <style>
         .detail-card {
             padding: 0;
@@ -138,21 +138,6 @@
                 </div>
             </div>
 
-            <!-- Comment Section -->
-            <div class="card" style="margin-top: 20px;">
-                <h3 class="section-title"><i class="fas fa-comments"></i> Bình luận</h3>
-                <div class="post-top">
-                    <img src="https://i.pravatar.cc/150?u=user" alt="User" class="avatar-medium">
-                    <div style="flex: 1; position: relative;">
-                        <input type="text" placeholder="Viết bình luận của bạn..." class="mock-input" style="width: 100%;" id="comment-input">
-                        <button id="send-comment" style="position: absolute; right: 10px; top: 10px; background: none; border: none; color: var(--primary-color); cursor: pointer;"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                </div>
-                <div class="post-divider"></div>
-                <div id="comment-list">
-                    <!-- Comments will be loaded here -->
-                </div>
-            </div>
         </section>
 
         <aside class="sidebar-right">
@@ -170,13 +155,31 @@
         </aside>
     </main>
 
-    <script src="/static/script.js"></script>
+    <nav class="bottom-navbar">
+        <a href="index.html" class="bottom-nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Trang chủ</span>
+        </a>
+        <a href="dacsan.html" class="bottom-nav-item">
+            <i class="fas fa-star"></i>
+            <span>Đặc sản</span>
+        </a>
+        <a href="saved.html" class="bottom-nav-item">
+            <i class="fas fa-bookmark"></i>
+            <span>Đã lưu</span>
+        </a>
+        <a href="profile.html" class="bottom-nav-item">
+            <i class="fas fa-user"></i>
+            <span>Cá nhân</span>
+        </a>
+    </nav>
+    <script src="/static/script.js?v=2.8"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const postId = urlParams.get('id') || 1;
             
-            // This function will be called in script.js, but I'll add a placeholder here
+            // This function will be called in script.js?v=2.8, but I'll add a placeholder here
             if (typeof loadPostDetail === 'function') {
                 loadPostDetail(postId);
             }
