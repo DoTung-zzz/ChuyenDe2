@@ -1799,3 +1799,12 @@ body {
     font-size: 14px;
     letter-spacing: 1px;
 }
+
+.post-options-container { position: relative; }
+.post-options { cursor: pointer; padding: 5px 10px; border-radius: 50%; transition: background 0.2s; color: var(--text-secondary); }
+.post-options:hover { background: rgba(0,0,0,0.05); }
+.options-dropdown { position: absolute; top: 100%; right: 0; background: var(--card-bg); border: 1px solid var(--divider-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; display: none; min-width: 150px; padding: 8px 0; }
+.options-dropdown.show { display: block; }
+.options-dropdown a { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: var(--text-main); text-decoration: none; font-size: 14px; transition: background 0.2s; }
+.options-dropdown a:hover { background: rgba(0,0,0,0.05); }
+.dropdown-divider { height: 1px; background: var(--divider-color); margin: 4px 0; }

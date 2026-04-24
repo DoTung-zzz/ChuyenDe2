@@ -1,3 +1,4 @@
+console.log('--- SOCIAL APP LOADED V5.0 ---');
 const API_BASE_URL = '/api';
 
 /**
@@ -403,13 +404,14 @@ function createPostCard(post) {
                 <span class="post-time">${new Date(post.created_at).toLocaleDateString('vi-VN')}</span>
             </div>
             <div class="post-options-container">
-                <div class="post-options" onclick="this.nextElementSibling.classList.toggle('show')">
+                <div class="post-options" onclick="event.stopPropagation(); this.nextElementSibling.classList.toggle('show')">
                     <i class="fas fa-ellipsis-h"></i>
                 </div>
                 <div class="options-dropdown">
-                    <a href="#" onclick="toggleFavorite(${post.post_id})"><i class="fas fa-bookmark"></i> Lưu món ăn</a>
+                    <a href="#" onclick="toggleFavorite(${post.post_id})"><i class="fas fa-bookmark"></i> Lưu bài viết</a>
+                    <a href="#" onclick="reportPost(${post.post_id})"><i class="fas fa-flag"></i> Báo cáo bài viết</a>
                     <div class="dropdown-divider"></div>
-                    <a href="#" onclick="reportPost(${post.post_id})"><i class="fas fa-flag"></i> Báo cáo</a>
+                    <a href="#" onclick="hidePost(${post.post_id})" style="color: #e53e3e;"><i class="fas fa-eye-slash"></i> Ẩn bài viết</a>
                 </div>
             </div>
         </div>
@@ -431,8 +433,8 @@ function createPostCard(post) {
                         <span class="reaction-emoji" title="Hot" onclick="toggleReaction(${post.post_id}, 'hot')">🔥</span>
                     </div>
                 </div>
-                <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 5px;" id="likes-count-container-${post.post_id}">
-                    ${post.likes_count > 0 ? `<i class="fas fa-thumbs-up" style="color:var(--primary-color); font-size:12px;"></i> <span id="likes-count-${post.post_id}">${post.likes_count}</span>` : '<span id="likes-count-' + post.post_id + '"></span>'}
+                <div style="font-size: 14px; color: var(--primary-color); font-weight: 500; display: flex; align-items: center;" id="likes-count-container-${post.post_id}">
+                    ${post.likes_count > 0 ? `<span id="likes-count-${post.post_id}">${post.likes_count}</span>` : '<span id="likes-count-' + post.post_id + '"></span>'}
                 </div>
                 <!-- NEW RATING BUTTON -->
                 <button class="reaction-trigger" onclick="togglePostSection(${post.post_id}, 'rating')">
@@ -514,7 +516,7 @@ async function toggleReaction(postId, type) {
             const updatedPost = await apiFetch(`/posts/${postId}/`);
             if (likesCountContainer) {
                 if (updatedPost.likes_count > 0) {
-                    likesCountContainer.innerHTML = `<i class="fas fa-thumbs-up" style="color:var(--primary-color); font-size:12px;"></i> <span id="likes-count-${postId}">${updatedPost.likes_count}</span>`;
+                    likesCountContainer.innerHTML = `<span id="likes-count-${postId}">${updatedPost.likes_count}</span>`;
                 } else {
                     likesCountContainer.innerHTML = `<span id="likes-count-${postId}"></span>`;
                 }
@@ -701,10 +703,16 @@ async function submitRating(postId) {
     }
     
     const starContainer = document.getElementById(`star-rating-${postId}`);
-    const stars = starContainer ? parseInt(starContainer.dataset.value) : 0;
+    let stars = 0;
+    if (starContainer && starContainer.dataset.value) {
+        stars = parseInt(starContainer.dataset.value);
+    }
     const comment = document.getElementById(`rating-comment-${postId}`)?.value.trim();
 
-    if (stars === 0) { alert('Vui lòng chọn số sao!'); return; }
+    if (!stars || isNaN(stars) || stars === 0) { 
+        alert('Vui lòng chọn số sao!'); 
+        return; 
+    }
 
     try {
         await apiFetch('/ratings/', {
@@ -1700,16 +1708,71 @@ async function toggleFavorite(postId) {
 }
 
 async function reportPost(postId) {
-    const reason = prompt('Lý do báo cáo:');
+    const reason = prompt('Lý do báo cáo bài viết này:');
     if (!reason) return;
     try {
         await apiFetch('/reports/', { method: 'POST', body: JSON.stringify({ post: postId, reason }) });
-        alert('Cảm ơn bạn đã báo cáo!');
-    } catch (e) { alert('Thất bại.'); }
+        alert('Cảm ơn bạn! Báo cáo đã được gửi tới quản trị viên.');
+    } catch(e) { alert('Lỗi gửi báo cáo.'); }
+}
+
+function hidePost(postId) {
+    if (!confirm('Bạn muốn ẩn bài viết này khỏi bảng tin?')) return;
+    const card = document.getElementById(`post-card-${postId}`) || 
+                 document.getElementById(`post-${postId}`);
+    if (card) {
+        // Wrap existing content if not already wrapped
+        let contentWrapper = card.querySelector('.post-content-wrapper');
+        if (!contentWrapper) {
+            contentWrapper = document.createElement('div');
+            contentWrapper.className = 'post-content-wrapper';
+            while (card.firstChild) {
+                contentWrapper.appendChild(card.firstChild);
+            }
+            card.appendChild(contentWrapper);
+        }
+        
+        // Hide the content wrapper
+        contentWrapper.style.display = 'none';
+
+        // Add the restore message
+        const restoreMsg = document.createElement('div');
+        restoreMsg.className = 'post-restore-msg';
+        restoreMsg.style.padding = '12px';
+        restoreMsg.style.textAlign = 'center';
+        restoreMsg.style.color = 'var(--text-secondary)';
+        restoreMsg.style.backgroundColor = 'rgba(0,0,0,0.03)';
+        restoreMsg.style.borderRadius = '8px';
+        restoreMsg.style.fontSize = '14px';
+        restoreMsg.innerHTML = `
+            <span>Đã ẩn bài viết.</span>
+            <a href="#" onclick="restorePost('${postId}', event)" style="color: var(--primary-color); font-weight: 600; margin-left: 10px; text-decoration: none;">Hoàn tác</a>
+        `;
+        card.appendChild(restoreMsg);
+    }
+}
+
+function restorePost(postId, event) {
+    if (event) event.preventDefault();
+    const card = document.getElementById(`post-card-${postId}`) || 
+                 document.getElementById(`post-${postId}`);
+    if (card) {
+        // Remove the restore message
+        const restoreMsg = card.querySelector('.post-restore-msg');
+        if (restoreMsg) restoreMsg.remove();
+        
+        // Show the original content
+        const contentWrapper = card.querySelector('.post-content-wrapper');
+        if (contentWrapper) {
+            contentWrapper.style.display = 'block';
+        }
+    }
 }
 
 window.toggleFavorite = toggleFavorite;
 window.reportPost = reportPost;
+window.hidePost = hidePost;
+window.restorePost = restorePost;
 
 async function initSettingsPage() {
     // Initial load
