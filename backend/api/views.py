@@ -5,10 +5,11 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.db.models import Avg
 
-from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report
+from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report, Reaction
 from .serializers import (
     RoleSerializer, UserSerializer, RegionSerializer, PostSerializer, 
-    CommentSerializer, RatingSerializer, FavoriteSerializer, ReportSerializer
+    CommentSerializer, RatingSerializer, FavoriteSerializer, ReportSerializer,
+    ReactionSerializer
 )
 
 # Authentication Views
@@ -33,9 +34,15 @@ def login(request):
         return Response({'token': token.key, 'user': UserSerializer(user).data})
     return Response({"error": "Wrong Credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
+@api_view(['GET', 'PATCH'])
 @permission_classes([permissions.IsAuthenticated])
 def me(request):
+    if request.method == 'PATCH':
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     return Response(UserSerializer(request.user).data)
 
 # ViewSets
@@ -129,7 +136,10 @@ class RatingViewSet(viewsets.ModelViewSet):
         rating, created = Rating.objects.update_or_create(
             user=self.request.user, 
             post=post,
-            defaults={'stars': serializer.validated_data.get('stars')}
+            defaults={
+                'stars': serializer.validated_data.get('stars'),
+                'comment': serializer.validated_data.get('comment')
+            }
         )
 
 class FavoriteViewSet(viewsets.ModelViewSet):
@@ -150,6 +160,28 @@ class ReportViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+class ReactionViewSet(viewsets.ModelViewSet):
+    queryset = Reaction.objects.all()
+    serializer_class = ReactionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        post_id = self.request.query_params.get('post')
+        if post_id:
+            return self.queryset.filter(post_id=post_id)
+        return self.queryset
+
+    def perform_create(self, serializer):
+        post = serializer.validated_data.get('post')
+        reaction_type = serializer.validated_data.get('reaction_type')
+        
+        # update_or_create logic
+        reaction, created = Reaction.objects.update_or_create(
+            user=self.request.user, 
+            post=post,
+            defaults={'reaction_type': reaction_type}
+        )
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

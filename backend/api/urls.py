@@ -8,6 +8,7 @@ router.register(r'posts', views.PostViewSet, basename='post')
 router.register(r'comments', views.CommentViewSet, basename='comment')
 router.register(r'ratings', views.RatingViewSet, basename='rating')
 router.register(r'favorites', views.FavoriteViewSet, basename='favorite')
+router.register(r'reactions', views.ReactionViewSet, basename='reaction')
 router.register(r'reports', views.ReportViewSet, basename='report')
 router.register(r'admin/users', views.UserAdminViewSet, basename='admin-user')
 

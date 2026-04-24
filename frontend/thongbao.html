@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thông Báo - Ẩm Thực 3 Miền</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/style.css?v=2.5">
+    <link rel="stylesheet" href="/static/style.css?v=3.4">
     <style>
         .notif-item {
             display: flex;
@@ -15,12 +15,15 @@
             border-bottom: 1px solid var(--divider-color);
             transition: background 0.2s;
             cursor: pointer;
+            background-color: var(--card-bg);
+            color: var(--text-main);
         }
         .notif-item:hover {
             background-color: var(--hover-bg);
         }
         .notif-item.unread {
-            background-color: #f0f7ff;
+            background-color: var(--hover-bg);
+            border-left: 4px solid var(--fb-blue);
         }
         .notif-icon-circle {
             width: 48px;
@@ -36,11 +39,18 @@
         .notif-info p {
             font-size: 15px;
             margin-bottom: 4px;
+            color: var(--text-main);
+        }
+        .notif-info p strong {
+            color: var(--text-main);
         }
         .notif-time {
             font-size: 13px;
-            color: #1877f2;
+            color: var(--fb-blue);
             font-weight: 600;
+        }
+        h1 {
+            color: var(--text-main);
         }
     </style>
 </head>
@@ -158,6 +168,6 @@
             <span>Cá nhân</span>
         </a>
     </nav>
-    <script src="/static/script.js?v=2.8"></script>
+    <script src="/static/script.js?v=2.9"></script>
 </body>
 </html>

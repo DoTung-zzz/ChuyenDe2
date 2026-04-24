@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cuisine Admin - Quản lý ẩm thực 3 miền</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/style.css?v=2.5">
+    <link rel="stylesheet" href="/static/style.css?v=3.4">
 </head>
 <body class="admin-body">
     <div class="admin-container">
@@ -35,6 +35,10 @@
                 <li class="admin-menu-item" id="menu-trending">
                     <i class="fas fa-fire"></i>
                     <span>Xu hướng ẩm thực</span>
+                </li>
+                <li class="admin-menu-item" id="menu-reports">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Quản lý báo cáo</span>
                 </li>
                 <li class="admin-menu-item" id="menu-settings">
                     <i class="fas fa-cog"></i>
@@ -85,7 +89,7 @@
                             <div class="value" id="stat-total-posts">--</div>
                         </div>
                     </div>
-                    <div class="stat-card red">
+                    <div class="stat-card red" style="cursor: pointer;" onclick="document.getElementById('menu-reports').click()">
                         <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
                         <div class="stat-info">
                             <h3>Báo cáo chưa xử lý</h3>
@@ -143,6 +147,6 @@
             <span>Cài đặt</span>
         </a>
     </nav>
-    <script src="/static/script.js?v=2.8"></script>
+    <script src="/static/script.js?v=2.9"></script>
 </body>
 </html>

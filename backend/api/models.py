@@ -14,6 +14,7 @@ class User(AbstractUser):
     # AbstractUser already provides username, password, email, date_joined (CreatedAt equivalent)
     # We add custom fields mapping to the SQL schema
     full_name = models.CharField(max_length=100)
+    bio = models.TextField(max_length=500, blank=True, null=True)
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, default='Active')
     
@@ -84,6 +85,7 @@ class Rating(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='ratings')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ratings')
     stars = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    comment = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -137,3 +139,24 @@ class DataAccessLog(models.Model):
 
     def __str__(self):
         return f"Access by {self.partner.partner_name} at {self.accessed_at}"
+
+class Reaction(models.Model):
+    REACTION_CHOICES = [
+        ('like', 'Like'),
+        ('love', 'Love'),
+        ('yummy', 'Yummy'),
+        ('wow', 'Wow'),
+        ('clap', 'Clap'),
+        ('hot', 'Hot')
+    ]
+    reaction_id = models.AutoField(primary_key=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reactions')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reactions')
+    reaction_type = models.CharField(max_length=20, choices=REACTION_CHOICES, default='like')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('post', 'user')
+
+    def __str__(self):
+        return f"{self.user.username} reacted {self.reaction_type} to {self.post.title}"

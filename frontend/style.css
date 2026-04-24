@@ -11,6 +11,25 @@
     --sidebar-width: 320px;
 }
 
+body.dark-theme {
+    --bg-color: #18191a;
+    --card-bg: #242526;
+    --text-main: #e4e6eb;
+    --text-secondary: #b0b3b8;
+    --divider-color: #3e4042;
+    --hover-bg: #3a3b3c;
+}
+
+body.pink-theme {
+    --bg-color: #fff0f5;
+    --card-bg: #ffffff;
+    --primary-color: #ff69b4;
+    --text-main: #4a4a4a;
+    --text-secondary: #8b5f65;
+    --divider-color: #ffc0cb;
+    --hover-bg: #ffe4e1;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -163,7 +182,7 @@ body {
     position: absolute;
     top: 55px; /* Just below the header */
     right: 0;
-    background-color: white;
+    background-color: var(--card-bg);
     min-width: 220px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     border-radius: 8px;
@@ -171,6 +190,7 @@ body {
     flex-direction: column;
     z-index: 1000;
     overflow: hidden;
+    border: 1px solid var(--divider-color);
 }
 
 .profile-dropdown.show {
@@ -247,8 +267,13 @@ body {
     transition: background 0.2s;
 }
 
-.menu-item:hover {
+.menu-item:hover, .menu-item.active {
     background-color: var(--hover-bg);
+}
+
+.menu-item.active span {
+    color: var(--primary-color);
+    font-weight: 700;
 }
 
 .avatar-menu {
@@ -293,10 +318,11 @@ body {
 
 .card {
     background-color: var(--card-bg);
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    margin-bottom: 16px;
-    padding: 12px 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 24px;
+    padding: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
 }
 
 .avatar-medium {
@@ -415,7 +441,7 @@ body {
     position: absolute;
     top: 100%;
     right: 0;
-    background-color: white;
+    background-color: var(--card-bg);
     min-width: 180px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     border-radius: 8px;
@@ -468,7 +494,7 @@ body {
 .post-image-placeholder {
     margin: 0 -16px;
     overflow: hidden;
-    background-color: #000;
+    background-color: var(--text-main);
 }
 
 .post-img {
@@ -504,17 +530,20 @@ body {
     margin-right: 4px;
 }
 
-.post-actions {
+/* Premium Interaction Buttons */
+.reaction-bar {
     display: flex;
-    padding: 4px 0;
+    justify-content: space-around;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,0,0,0.05);
 }
 
-.action-btn-secondary {
+.reaction-trigger, .btn-view-recipe {
     flex: 1;
     background: transparent;
     border: none;
-    padding: 8px;
-    border-radius: 4px;
+    padding: 12px;
+    border-radius: 12px;
     color: var(--text-secondary);
     font-weight: 600;
     font-size: 14px;
@@ -522,11 +551,207 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.action-btn-secondary:hover {
+.reaction-trigger:hover, .btn-view-recipe:hover {
     background-color: var(--hover-bg);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+/* modern Pill Button Style */
+.btn-submit-rating, .btn-submit-comment {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 28px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(247, 99, 12, 0.35);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-submit-rating:hover, .btn-submit-comment:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(247, 99, 12, 0.45);
+    filter: brightness(1.1);
+}
+
+.btn-submit-rating i, .btn-submit-comment i {
+    font-size: 16px;
+}
+
+/* Modern Post Expansion Styles */
+.post-expansion {
+    border-top: 1px solid rgba(0,0,0,0.05);
+    padding: 25px 20px;
+    background-color: #fcfcfc;
+    border-radius: 0 0 16px 16px;
+    display: none;
+    box-shadow: inset 0 5px 15px rgba(0,0,0,0.04);
+    animation: slideDownFade 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.post-expansion.show {
+    display: block;
+}
+@keyframes slideDownFade {
+    from { opacity: 0; transform: translateY(-20px); max-height: 0; }
+    to { opacity: 1; transform: translateY(0); max-height: 4000px; }
+}
+
+.expansion-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.expansion-title i {
+    color: var(--primary-color);
+}
+
+/* Premium In-Card Rating Form */
+.mini-rating-form {
+    background: var(--card-bg);
+    padding: 24px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border: 1px solid #f2f2f2;
+    margin-bottom: 30px;
+}
+.mini-rating-form textarea, .modern-comment-input {
+    width: 100%;
+    margin: 15px 0;
+    padding: 18px;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    font-size: 16px;
+    outline: none;
+    resize: vertical;
+    transition: all 0.3s ease;
+    background: #fdfdfd;
+    min-height: 120px;
+}
+.mini-rating-form textarea:focus, .modern-comment-input:focus {
+    border-color: var(--primary-color);
+    background: var(--card-bg);
+    box-shadow: 0 0 0 5px rgba(247, 99, 12, 0.12);
+}
+
+/* Review Item Cards */
+.mini-review-item {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border: 1px solid #f1f5f9;
+}
+.mini-review-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.mini-review-meta strong {
+    font-size: 14px;
+    color: var(--text-main);
+}
+.star-display {
+    color: #f6ad55;
+    font-size: 12px;
+}
+
+/* Modern Comment Bubbles */
+.comment-bubble-wrapper {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.comment-bubble {
+    background: #e9ecef;
+    padding: 10px 14px;
+    border-radius: 18px;
+    border-top-left-radius: 4px;
+    max-width: 85%;
+}
+.comment-bubble-author {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    color: #1a202c;
+}
+.comment-bubble-text {
+    font-size: 14px;
+    color: #2d3748;
+    line-height: 1.4;
+}
+
+/* Card-based Info Steps/Ingredients */
+.mini-info-section {
+    color: #4a5568;
+}
+.ingredients-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.ingredient-chip {
+    background: var(--card-bg);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #edf2f7;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.ingredient-chip::before {
+    content: '•';
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.recipe-card-step {
+    background: var(--card-bg);
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    display: flex;
+    gap: 12px;
+}
+.step-index {
+    font-weight: 800;
+    color: var(--primary-color);
+    opacity: 0.5;
+}
+
+/* Animated Star Selection */
+.star-rating .star {
+    font-size: 26px;
+    cursor: pointer;
+    color: #cbd5e0;
+    transition: transform 0.2s, color 0.2s;
+    display: inline-block;
+}
+.star-rating .star:hover {
+    transform: scale(1.2);
+}
+.star-rating .star.active {
+    color: #f6ad55;
+    text-shadow: 0 0 8px rgba(246, 173, 85, 0.4);
 }
 
 /* Sidebar Right */
@@ -592,12 +817,12 @@ body {
 .admin-container {
     display: flex;
     min-height: 100vh;
-    background-color: #f8f9fa;
+    background-color: var(--bg-color);
 }
 
 .admin-sidebar {
     width: 260px;
-    background-color: #fff;
+    background-color: var(--card-bg);
     border-right: 1px solid var(--divider-color);
     padding: 20px 0;
     position: fixed;
@@ -660,7 +885,7 @@ body {
 }
 
 .stat-card {
-    background: #fff;
+    background: var(--card-bg);
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -708,7 +933,7 @@ body {
 }
 
 .chart-card, .top-dishes-card {
-    background: #fff;
+    background: var(--card-bg);
     padding: 24px;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -814,7 +1039,7 @@ body {
 }
 
 .auth-container {
-    background: white;
+    background: var(--card-bg);
     width: 100%;
     max-width: 400px;
     padding: 2rem;
@@ -966,7 +1191,7 @@ body {
         left: 0 !important;
         width: 100% !important;
         height: 65px !important;
-        background: #ffffff !important;
+        background: var(--card-bg) !important;
         display: flex !important;
         justify-content: space-around !important;
         align-items: center !important;
@@ -1022,7 +1247,7 @@ body {
    Admin Management UI (Modernized)
    ========================================= */
 .admin-content-card {
-    background: white;
+    background: var(--card-bg);
     padding: 28px;
     border-radius: 16px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.04);
@@ -1106,6 +1331,8 @@ body {
 .badge-rejected { background: #ffebee; color: #f44336; }
 .badge-admin { background: #e3f2fd; color: #2196f3; }
 .badge-inactive { background: #eeeeee; color: #757575; }
+.badge-processed { background: #e8f5e9; color: #2e7d32; }
+.badge-dismissed { background: #f5f5f5; color: #9e9e9e; }
 
 /* Modern Admin Buttons */
 .btn-admin {
@@ -1124,7 +1351,7 @@ body {
 
 .btn-approve { background: #1db954; color: white; }
 .btn-reject { background: #f44336; color: white; }
-.btn-edit { background: #f5f5f7; color: #333; }
+.btn-edit { background: #f5f5f7; color: var(--text-main); }
 .btn-delete { background: #333; color: white; }
 
 .btn-approve:hover { background: #17a34a; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(29, 185, 84, 0.2); }
@@ -1184,7 +1411,7 @@ body {
 }
 
 .settings-card {
-    background: #ffffff;
+    background: var(--card-bg);
     border: 1px solid #f0f0f0;
     padding: 24px;
     border-radius: 16px;
@@ -1228,7 +1455,7 @@ body {
 
 .settings-input:focus {
     border-color: var(--primary-color);
-    background: white;
+    background: var(--card-bg);
     box-shadow: 0 0 0 4px rgba(247, 99, 12, 0.1);
 }
 
@@ -1256,7 +1483,7 @@ body {
 }
 
 .admin-modal-content {
-    background: white;
+    background: var(--card-bg);
     width: 600px;
     max-width: 95%;
     border-radius: 20px;
@@ -1304,7 +1531,7 @@ body {
     padding: 15px;
     border-radius: 16px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: #fff;
+    background: var(--card-bg);
 }
 
 .dish-card-admin:hover {
@@ -1350,7 +1577,7 @@ body {
     position: absolute;
     bottom: calc(100% + 8px);
     left: 0;
-    background: white;
+    background: var(--card-bg);
     border-radius: 30px;
     padding: 5px 10px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.15);
@@ -1470,7 +1697,7 @@ body {
     padding: 16px;
     padding-bottom: 50px;
     border: 1px solid #e0e0e0;
-    background: #fff;
+    background: var(--card-bg);
     resize: none;
     font-family: inherit;
     font-size: 14px;
@@ -1484,9 +1711,6 @@ body {
 }
 
 .btn-submit-comment {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
     background: var(--primary-color);
     color: white;
     border: none;
@@ -1541,4 +1765,37 @@ body {
     font-size: 11px;
     color: #65676B;
     margin-top: 5px;
+}
+
+/* Star Rating System */
+.star-rating {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+    font-size: 22px;
+    cursor: pointer;
+    user-select: none;
+    align-items: center;
+}
+
+.star {
+    color: #ccc;
+    transition: all 0.2s;
+    text-shadow: 0 0 1px rgba(0,0,0,0.1);
+    display: inline-block;
+}
+
+.star:hover {
+    transform: scale(1.2);
+}
+
+.star.active {
+    color: #f1c40f; /* Gold color for active stars */
+    text-shadow: 0 0 5px rgba(241, 196, 15, 0.3);
+}
+
+.star-display {
+    color: #f1c40f;
+    font-size: 14px;
+    letter-spacing: 1px;
 }

@@ -29,8 +29,18 @@ async function apiFetch(endpoint, options = {}) {
         }
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(JSON.stringify(errorData) || 'API Request Failed');
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                errorData = { detail: response.statusText };
+            }
+            throw new Error(errorData.detail || errorData.message || JSON.stringify(errorData) || 'API Request Failed');
+        }
+
+        // Handle 204 No Content
+        if (response.status === 204) {
+            return null;
         }
 
         return await response.json();
@@ -41,11 +51,20 @@ async function apiFetch(endpoint, options = {}) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    applyTheme();
     checkAuth();
     updateUserUI();
     initPage();
     setupSharedEvents();
 });
+
+function applyTheme() {
+    const theme = localStorage.getItem('theme') || 'light';
+    document.body.classList.remove('dark-theme', 'pink-theme');
+    if (theme !== 'light') {
+        document.body.classList.add(`${theme}-theme`);
+    }
+}
 
 function checkAuth() {
     const publicPages = ['login.html', 'index.html', 'dacsan.html', 'trending.html'];
@@ -235,6 +254,7 @@ function setupSharedEvents() {
 
 function initPage() {
     const path = window.location.pathname;
+    console.log('Current path:', path);
 
     if (path.includes('login.html')) {
         initLoginPage();
@@ -258,6 +278,8 @@ function initPage() {
         initSavedPage();
     } else if (path.includes('trending.html')) {
         initTrendingPage();
+    } else if (path.includes('settings.html')) {
+        initSettingsPage();
     }
 }
 
@@ -372,6 +394,7 @@ async function loadFeed() {
 function createPostCard(post) {
     const div = document.createElement('div');
     div.className = 'card post';
+    div.id = `post-card-${post.post_id}`; // Unique ID for card
     div.innerHTML = `
         <div class="post-header">
             <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(post.author_name)}&background=random" alt="Author" class="avatar-medium">
@@ -397,8 +420,8 @@ function createPostCard(post) {
         <div class="post-footer">
             <div class="reaction-bar">
                 <div class="reaction-btn-wrapper">
-                    <button class="reaction-trigger" id="react-btn-${post.post_id}" onclick="toggleReaction(${post.post_id}, 'like')">
-                        <span class="react-emoji"><i class="far fa-thumbs-up"></i></span> <span class="react-label" id="react-label-${post.post_id}">Thích</span>
+                    <button class="reaction-trigger" id="react-btn-${post.post_id}" onclick="toggleReaction(${post.post_id}, 'like')" data-reacted="${post.user_reaction || ''}" style="color: ${post.user_reaction ? (post.user_reaction === 'like' ? 'var(--primary-color)' : {love:'#e41e3f', yummy:'#f5a623', wow:'#f5a623', clap:'#f5a623', hot:'#ff6b00'}[post.user_reaction]) : '#65676B'}">
+                        <span class="react-emoji">${post.user_reaction ? (post.user_reaction === 'like' ? '<i class="fas fa-thumbs-up"></i>' : {love:'❤️', yummy:'😋', wow:'😮', clap:'👏', hot:'🔥'}[post.user_reaction]) : '<i class="far fa-thumbs-up"></i>'}</span> <span class="react-label" id="react-label-${post.post_id}">${post.user_reaction ? {like:'Thích', love:'Yêu thích', yummy:'Ngon lắm', wow:'Ấn tượng', clap:'Hay quá', hot:'Hot'}[post.user_reaction] : 'Thích'}</span>
                     </button>
                     <div class="reaction-popup" id="popup-${post.post_id}">
                         <span class="reaction-emoji" title="Yêu thích" onclick="toggleReaction(${post.post_id}, 'love')">❤️</span>
@@ -408,127 +431,312 @@ function createPostCard(post) {
                         <span class="reaction-emoji" title="Hot" onclick="toggleReaction(${post.post_id}, 'hot')">🔥</span>
                     </div>
                 </div>
-                <button class="reaction-trigger" onclick="window.location.href='chitiet.html?id=${post.post_id}#comments'">
-                    <span class="react-emoji">💬</span> Bình luận
+                <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 5px;" id="likes-count-container-${post.post_id}">
+                    ${post.likes_count > 0 ? `<i class="fas fa-thumbs-up" style="color:var(--primary-color); font-size:12px;"></i> <span id="likes-count-${post.post_id}">${post.likes_count}</span>` : '<span id="likes-count-' + post.post_id + '"></span>'}
+                </div>
+                <!-- NEW RATING BUTTON -->
+                <button class="reaction-trigger" onclick="togglePostSection(${post.post_id}, 'rating')">
+                    <span class="react-emoji"><i class="far fa-star"></i></span> Đánh giá
                 </button>
-                <button class="btn-view-recipe" onclick="window.location.href='chitiet.html?id=${post.post_id}'">Xem chi tiết</button>
+
+                <!-- UPDATED COMMENT BUTTON -->
+                <button class="reaction-trigger" onclick="togglePostSection(${post.post_id}, 'comments')">
+                    <span class="react-emoji"><i class="far fa-comment"></i></span> Bình luận
+                </button>
+
+                <!-- UPDATED VIEW DETAILS BUTTON -->
+                <button class="btn-view-recipe" onclick="togglePostSection(${post.post_id}, 'info')">
+                    <span class="react-emoji"><i class="fas fa-info-circle"></i></span> Xem chi tiết
+                </button>
             </div>
         </div>
+        
+        <!-- EXPANSION CONTAINER -->
+        <div id="expansion-${post.post_id}" class="post-expansion"></div>
     `;
     return div;
 }
 
-function toggleReaction(postId, type) {
+async function toggleReaction(postId, type) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        alert('Vui lòng đăng nhập để thả cảm xúc!');
+        window.location.href = 'login.html';
+        return;
+    }
+
     const emojis = { like: '👍', love: '❤️', yummy: '😋', wow: '😮', clap: '👏', hot: '🔥' };
     const texts = { like: 'Thích', love: 'Yêu thích', yummy: 'Ngon lắm', wow: 'Ấn tượng', clap: 'Hay quá', hot: 'Hot' };
     
     const btn = document.getElementById(`react-btn-${postId}`);
+    const likesCountContainer = document.getElementById(`likes-count-container-${postId}`);
+
     if (btn) {
         const emojiSpan = btn.querySelector('.react-emoji');
         const labelSpan = btn.querySelector('.react-label');
         
-        // Toggle logic: if user clicked 'like' and already has a reaction, remove it (Unlike)
-        if (type === 'like' && btn.dataset.reacted) {
-            if (emojiSpan) emojiSpan.innerHTML = '<i class="far fa-thumbs-up"></i>';
-            if (labelSpan) labelSpan.textContent = 'Thích';
-            btn.style.color = '#65676B'; // Default gray color
-            delete btn.dataset.reacted;
-        } else {
-            // Set reaction
-            if (type === 'like') {
-                if (emojiSpan) emojiSpan.innerHTML = '<i class="fas fa-thumbs-up"></i>';
-            } else {
-                if (emojiSpan) emojiSpan.textContent = emojis[type] || '👍';
-            }
-            if (labelSpan) labelSpan.textContent = texts[type] || 'Thích';
-            
-            // Assign specific colors for reactions
-            const colorMap = { 
-                like: 'var(--primary-color)', 
-                love: '#e41e3f', 
-                yummy: '#f5a623', 
-                wow: '#f5a623', 
-                clap: '#f5a623', 
-                hot: '#ff6b00' 
-            };
-            btn.style.color = colorMap[type] || 'var(--primary-color)';
-            btn.dataset.reacted = type;
+        let isRemoving = false;
+        if (type === 'like' && btn.dataset.reacted === 'like') {
+            isRemoving = true;
         }
+
+        try {
+            if (isRemoving) {
+                const allReactions = await apiFetch(`/reactions/?post=${postId}`);
+                const userData = JSON.parse(localStorage.getItem('user_data'));
+                const myReaction = allReactions.find(r => r.user === userData.id);
+                if (myReaction) {
+                    await apiFetch(`/reactions/${myReaction.reaction_id}/`, { method: 'DELETE' });
+                }
+                
+                if (emojiSpan) emojiSpan.innerHTML = '<i class="far fa-thumbs-up"></i>';
+                if (labelSpan) labelSpan.textContent = 'Thích';
+                btn.style.color = '#65676B';
+                delete btn.dataset.reacted;
+            } else {
+                await apiFetch('/reactions/', {
+                    method: 'POST',
+                    body: JSON.stringify({ post: postId, reaction_type: type })
+                });
+
+                if (type === 'like') {
+                    if (emojiSpan) emojiSpan.innerHTML = '<i class="fas fa-thumbs-up"></i>';
+                } else {
+                    if (emojiSpan) emojiSpan.textContent = emojis[type] || '👍';
+                }
+                if (labelSpan) labelSpan.textContent = texts[type] || 'Thích';
+                
+                const colorMap = { like: 'var(--primary-color)', love: '#e41e3f', yummy: '#f5a623', wow: '#f5a623', clap: '#f5a623', hot: '#ff6b00' };
+                btn.style.color = colorMap[type] || 'var(--primary-color)';
+                btn.dataset.reacted = type;
+            }
+
+            const updatedPost = await apiFetch(`/posts/${postId}/`);
+            if (likesCountContainer) {
+                if (updatedPost.likes_count > 0) {
+                    likesCountContainer.innerHTML = `<i class="fas fa-thumbs-up" style="color:var(--primary-color); font-size:12px;"></i> <span id="likes-count-${postId}">${updatedPost.likes_count}</span>`;
+                } else {
+                    likesCountContainer.innerHTML = `<span id="likes-count-${postId}"></span>`;
+                }
+            }
+        } catch (e) { console.error('Reaction Error:', e); }
     }
 
     const popup = document.getElementById(`popup-${postId}`);
     if (popup) {
-        // Temporarily hide the popup to acknowledge the click
         popup.style.display = 'none';
-        // Clear the inline style so the CSS hover effect works again later
-        setTimeout(() => {
-            popup.style.display = '';
-        }, 200);
+        setTimeout(() => { popup.style.display = ''; }, 200);
     }
 }
 
-async function loadPostDetail(id) {
-    const container = document.getElementById('post-detail-container');
-    if (!container) return;
+/**
+ * Handles toggling sections (Info, Rating, Comments) within a post card on the feed.
+ */
+async function togglePostSection(postId, type) {
+    const expansion = document.getElementById(`expansion-${postId}`);
+    if (!expansion) return;
 
-    try {
-        const post = await apiFetch(`/posts/${id}/`);
-        if (!post) return;
+    if (expansion.classList.contains('show') && expansion.dataset.activeTab === type) {
+        expansion.classList.remove('show');
+        setTimeout(() => { if(!expansion.classList.contains('show')) expansion.innerHTML = ''; }, 400);
+        return;
+    }
 
-        document.getElementById('author-name').innerText = post.author_name;
-        document.getElementById('author-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author_name)}&background=random`;
+    expansion.innerHTML = '<div style="text-align:center; padding:30px; color:var(--primary-color);"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
+    expansion.classList.add('show');
+    expansion.dataset.activeTab = type;
 
-        container.innerHTML = `
-            <div class="detail-hero">
-                <img src="${post.thumbnail || 'https://picsum.photos/seed/food/1200/800'}" alt="${post.title}">
-                <div class="detail-hero-overlay">
-                    <h1>${post.title}</h1>
-                    <p>${post.region_name} · ${new Date(post.created_at).toLocaleDateString('vi-VN')}</p>
+    if (type === 'info') {
+        const post = await apiFetch(`/posts/${postId}/`);
+        expansion.innerHTML = `
+            <div class="mini-info-section">
+                <div class="expansion-title"><i class="fas fa-utensils"></i> Thông tin & Chế biến</div>
+                <p style="margin-bottom:18px; line-height:1.6;">${post.content || 'Đang cập nhật giới thiệu...'}</p>
+                
+                <div style="font-weight:700; font-size:14px; margin-bottom:10px; color:var(--text-main);">Thành phần nguyên liệu:</div>
+                <div class="ingredients-grid">
+                    ${post.ingredients ? post.ingredients.split('\n').filter(i => i.trim()).map(i => `<div class="ingredient-chip">${i}</div>`).join('') : '<div class="ingredient-chip">Đang cập nhật...</div>'}
+                </div>
+                
+                <div style="font-weight:700; font-size:14px; margin-bottom:10px; color:var(--text-main);">Các bước thực hiện:</div>
+                <div class="recipe-steps-list">
+                    ${post.recipe ? post.recipe.split('\n').filter(r => r.trim()).map((r, i) => `
+                        <div class="recipe-card-step">
+                            <span class="step-index">${(i+1).toString().padStart(2, '0')}</span>
+                            <p style="font-size:14px; margin:0;">${r}</p>
+                        </div>
+                    `).join('') : '<p>Đang cập nhật công thức...</p>'}
                 </div>
             </div>
-            <div class="detail-content">
-                <div class="section-title">Giới thiệu</div>
-                <p>${post.content || 'Món ăn đặc sắc mang đậm hương vị truyền thống.'}</p>
-                <div class="section-title">Nguyên liệu</div>
-                <ul>${post.ingredients ? post.ingredients.split('\n').filter(i => i.trim()).map(i => `<li>${i}</li>`).join('') : '<li>Đang cập nhật...</li>'}</ul>
-                <div class="section-title">Cách thực hiện</div>
-                <div class="recipe-steps">${post.recipe ? post.recipe.split('\n').filter(r => r.trim()).map((r, i) => `<div class="recipe-step"><div class="step-num">${i + 1}</div><p>${r}</p></div>`).join('') : '<p>Đang cập nhật...</p>'}</div>
-
-                <!-- Star Rating Section -->
-                <div class="rating-section" id="rating-section-${id}">
-                    <div class="section-title">Đánh giá món ăn</div>
-                    <div class="star-rating-wrapper">
-                        <div class="star-rating" id="star-rating-${id}">
-                            ${[1,2,3,4,5].map(n => `<span class="star" data-val="${n}" onclick="submitRating(${id}, ${n})">★</span>`).join('')}
-                        </div>
-                        <span class="rating-label" id="rating-label-${id}">Chọn số sao để đánh giá</span>
+        `;
+    } else if (type === 'rating') {
+        expansion.innerHTML = `
+            <div class="expansion-title"><i class="fas fa-star-half-alt"></i> Đánh giá từ cộng đồng</div>
+            <div class="mini-rating-form">
+                <div style="font-weight:600; font-size:14px; margin-bottom:12px; color:var(--text-main);">Chia sẻ cảm nhận của bạn:</div>
+                <div class="star-rating" id="star-rating-${postId}" onmouseout="resetStars(${postId})">
+                    ${[1,2,3,4,5].map(n => `<i class="far fa-star star" data-val="${n}" onclick="setRating(${postId}, ${n})" onmouseover="highlightStars(${postId}, ${n})"></i>`).join('')}
+                </div>
+                <textarea id="rating-comment-${postId}" placeholder="Hương vị thế nào? Bạn có lời khuyên gì không..."></textarea>
+                <div style="display:flex; justify-content:flex-end;">
+                    <button class="btn-submit-rating" onclick="submitRating(${postId})">
+                        <i class="fas fa-paper-plane"></i> Gửi đánh giá
+                    </button>
+                </div>
+            </div>
+            <div id="ratings-list-${postId}"></div>
+        `;
+        loadRatingsList(postId);
+        loadUserRating(postId);
+    } else if (type === 'comments') {
+        expansion.innerHTML = `
+            <div class="expansion-title"><i class="fas fa-comment-alt"></i> Thảo luận món ăn</div>
+            <div class="comment-input-row" style="display:flex; gap:12px; margin-bottom:25px;">
+                <img src="https://ui-avatars.com/api/?name=Me&background=f7630c&color=fff" style="width:36px; height:36px; border-radius:50%;">
+                <div style="flex:1;">
+                    <textarea id="comment-input-${postId}" class="modern-comment-input" placeholder="Viết phản hồi của bạn..."></textarea>
+                    <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                        <button class="btn-submit-comment" onclick="submitComment(${postId})">
+                            <i class="fas fa-comment-dots"></i> Bình luận
+                        </button>
                     </div>
                 </div>
+            </div>
+            <div id="comments-list-${postId}"></div>
+        `;
+        loadComments(postId);
+    }
+}
 
-                <!-- Comment Section -->
-                <div class="comment-section" id="comments">
-                    <div class="section-title">Bình luận</div>
-                    <div class="comment-input-row">
-                        <img src="https://ui-avatars.com/api/?name=Me&background=f7630c&color=fff" class="avatar-small">
-                        <div class="comment-input-box">
-                            <textarea id="comment-input-${id}" placeholder="Chia sẻ cảm nhận của bạn về món ăn này..." rows="2"></textarea>
-                            <button class="btn-submit-comment" onclick="submitComment(${id})">
-                                <i class="fas fa-paper-plane"></i> Gửi
-                            </button>
-                        </div>
-                    </div>
-                    <div id="comments-list-${id}" class="comments-list">
-                        <div style="text-align:center; padding:20px; color:#aaa;"><i class="fas fa-spinner fa-spin"></i></div>
+async function loadRatingsList(postId) {
+    const list = document.getElementById(`ratings-list-${postId}`);
+    if (!list) return;
+    try {
+        const ratings = await apiFetch(`/ratings/?post=${postId}`);
+        if (!ratings || ratings.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:#adb5bd; font-size:13px; padding:20px; border: 1px dashed #e2e8f0; border-radius:10px;">Chưa có đánh giá nào cho món này.</p>';
+            return;
+        }
+
+        const userData = JSON.parse(localStorage.getItem('user_data'));
+
+        list.innerHTML = ratings.map(r => {
+            const isMe = userData && userData.id === r.user;
+            const deleteBtn = isMe ? `<span onclick="deleteRating(${r.rating_id}, ${postId})" style="color: #e53e3e; cursor: pointer; font-size:11px; font-weight:600; margin-top:4px; display:inline-block; margin-left: 10px;">Xóa đánh giá</span>` : '';
+            
+            return `
+            <div class="mini-review-item">
+                <div class="mini-review-meta">
+                    <strong>${r.user_name || 'Người dùng'}</strong>
+                    <div style="display: flex; align-items: center;">
+                        <div class="star-display">${'★'.repeat(r.stars)}</div>
+                        ${deleteBtn}
                     </div>
                 </div>
-            </div>`;
+                <div style="font-size:13px; color:var(--text-secondary); line-height:1.5;">${r.comment || '<i>Chỉ đánh giá sao</i>'}</div>
+            </div>
+            `;
+        }).join('');
+    } catch(e) {}
+}
 
-        // Load star rating + comments
-        loadComments(id);
-        loadUserRating(id);
+async function deleteRating(ratingId, postId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) return;
+    try {
+        await apiFetch(`/ratings/${ratingId}/`, { method: 'DELETE' });
+        loadRatingsList(postId);
+        // Reset the form
+        setRating(postId, 0);
+        const box = document.getElementById(`rating-comment-${postId}`);
+        if (box) box.value = '';
+        const btn = document.querySelector(`#expansion-${postId} .btn-submit-rating`);
+        if (btn) btn.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi đánh giá';
+    } catch (e) { alert('Lỗi xóa đánh giá.'); }
+}
 
-    } catch (err) {
-        container.innerHTML = '<div style="padding:40px; text-align:center; color:red;">Lỗi tải dữ liệu.</div>';
+async function loadComments(postId) {
+    const list = document.getElementById(`comments-list-${postId}`);
+    if (!list) return;
+    try {
+        const comments = await apiFetch(`/comments/?post=${postId}`);
+        if (!comments || comments.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:#adb5bd; font-size:13px; padding:20px; border: 1px dashed #e2e8f0; border-radius:10px;">Hãy là người đầu tiên bình luận!</p>';
+            return;
+        }
+
+        const userDataStr = localStorage.getItem('user_data');
+        const currentUser = userDataStr ? JSON.parse(userDataStr) : null;
+
+        list.innerHTML = comments.map(c => {
+            const isMe = currentUser && currentUser.id === c.user;
+            const actions = isMe ? `
+                <div style="display:flex; gap:10px; margin-top:4px;">
+                    <span onclick="editComment(${c.comment_id}, ${postId}, '${c.content.replace(/'/g, "\\'")}')" style="color: var(--primary-color); cursor: pointer; font-size:11px; font-weight:600;">Sửa</span>
+                    <span onclick="deleteComment(${c.comment_id}, ${postId})" style="color: #e53e3e; cursor: pointer; font-size:11px; font-weight:600;">Xóa</span>
+                </div>
+            ` : '';
+            
+            return `
+            <div class="comment-bubble-wrapper">
+                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(c.user_name || 'U')}&background=random" style="width:28px; height:28px; border-radius:50%;">
+                <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                    <div class="comment-bubble">
+                        <div class="comment-bubble-author">${c.user_name || 'Người dùng'}</div>
+                        <div class="comment-bubble-text" id="comment-text-${c.comment_id}">${c.content}</div>
+                    </div>
+                    ${actions}
+                </div>
+            </div>
+            `;
+        }).join('');
+    } catch(e) {}
+}
+
+async function submitRating(postId) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        alert('Vui lòng đăng nhập để đánh giá!');
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    const starContainer = document.getElementById(`star-rating-${postId}`);
+    const stars = starContainer ? parseInt(starContainer.dataset.value) : 0;
+    const comment = document.getElementById(`rating-comment-${postId}`)?.value.trim();
+
+    if (stars === 0) { alert('Vui lòng chọn số sao!'); return; }
+
+    try {
+        await apiFetch('/ratings/', {
+            method: 'POST',
+            body: JSON.stringify({ post: postId, stars, comment })
+        });
+        loadRatingsList(postId);
+        alert('Đã gửi đánh giá!');
+    } catch(e) { alert('Lỗi: ' + e.message); }
+}
+
+async function submitComment(postId) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        alert('Vui lòng đăng nhập để bình luận!');
+        window.location.href = 'login.html';
+        return;
+    }
+    const input = document.getElementById(`comment-input-${postId}`);
+    const content = input?.value.trim();
+    if (!content) return;
+    try {
+        const result = await apiFetch('/comments/', { 
+            method: 'POST', 
+            body: JSON.stringify({ post: postId, content }) 
+        });
+        console.log('Comment submitted:', result);
+        input.value = '';
+        loadComments(postId);
+    } catch(e) { 
+        console.error('Comment Error:', e);
+        alert('Lỗi gửi bình luận: ' + e.message); 
     }
 }
 
@@ -538,82 +746,55 @@ async function loadUserRating(postId) {
         const userData = JSON.parse(localStorage.getItem('user_data'));
         if (!ratings || !userData) return;
         const myRating = ratings.find(r => r.user === userData.id);
-        if (myRating) highlightStars(postId, myRating.stars);
+        if (myRating) {
+            setRating(postId, myRating.stars);
+            const box = document.getElementById(`rating-comment-${postId}`);
+            if (box) box.value = myRating.comment || '';
+            const btn = document.querySelector(`#expansion-${postId} .btn-submit-rating`);
+            if (btn) btn.innerHTML = '<i class="fas fa-edit"></i> Cập nhật đánh giá';
+        }
     } catch(e) {}
 }
 
 function highlightStars(postId, val) {
-    document.querySelectorAll(`#star-rating-${postId} .star`).forEach(s => {
-        s.classList.toggle('active', parseInt(s.dataset.val) <= val);
-    });
-    const label = document.getElementById(`rating-label-${postId}`);
-    const labels = ['', 'Tệ', 'Không hay', 'Bình thường', 'Hay', 'Tuyệt vời!'];
-    if (label) label.textContent = labels[val] || '';
-}
-
-async function submitRating(postId, stars) {
-    const token = localStorage.getItem('access_token');
-    if (!token) { alert('Vui lòng đăng nhập để đánh giá!'); return; }
-    try {
-        await apiFetch('/ratings/', {
-            method: 'POST',
-            body: JSON.stringify({ post: postId, stars })
-        });
-        highlightStars(postId, stars);
-    } catch(e) {
-        // If already rated, try PATCH
-        try {
-            const ratings = await apiFetch(`/ratings/`);
-            const userData = JSON.parse(localStorage.getItem('user_data'));
-            const myRating = ratings.find(r => r.post === postId && r.user === userData.id);
-            if (myRating) {
-                await apiFetch(`/ratings/${myRating.rating_id}/`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ stars })
-                });
-                highlightStars(postId, stars);
-            }
-        } catch(e2) {}
-    }
-}
-
-async function loadComments(postId) {
-    const list = document.getElementById(`comments-list-${postId}`);
-    if (!list) return;
-    try {
-        const comments = await apiFetch(`/comments/?post=${postId}`);
-        if (!comments || comments.length === 0) {
-            list.innerHTML = '<p style="text-align:center; color:#aaa; padding:20px;">Chưa có bình luận nào. Hãy là người đầu tiên!</p>';
-            return;
+    const container = document.getElementById(`star-rating-${postId}`);
+    if (!container) return;
+    const stars = container.querySelectorAll('.star');
+    stars.forEach(s => {
+        const starValue = parseInt(s.getAttribute('data-val'));
+        if (starValue <= val) {
+            s.classList.remove('far');
+            s.classList.add('fas', 'active');
+        } else {
+            s.classList.remove('fas', 'active');
+            s.classList.add('far');
         }
-
-        const userDataStr = localStorage.getItem('user_data');
-        const currentUser = userDataStr ? JSON.parse(userDataStr) : null;
-
-        list.innerHTML = comments.map(c => {
-            const isMe = currentUser && currentUser.id === c.user;
-            
-            // Safe escape content for onclick
-            const safeContent = c.content.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            
-            const deleteBtn = isMe ? `<span onclick="deleteComment(${c.comment_id}, ${postId})" style="float: right; color: #ff4d4f; cursor: pointer; padding-left: 15px;" title="Xóa bình luận"><i class="fas fa-trash"></i></span>` : '';
-            const editBtn = isMe ? `<span onclick="editComment(${c.comment_id}, '${safeContent}', ${postId})" style="float: right; color: #1877f2; cursor: pointer; padding-left: 10px;" title="Sửa bình luận"><i class="fas fa-pen"></i></span>` : '';
-
-            return `
-            <div class="comment-item" id="comment-item-${c.comment_id}">
-                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(c.user_name || 'U')}&background=random" class="avatar-small">
-                <div class="comment-body" style="width: 100%;">
-                    <div class="comment-author">${c.user_name || 'Người dùng'} ${deleteBtn} ${editBtn}</div>
-                    <div class="comment-text" id="comment-text-${c.comment_id}">${c.content}</div>
-                    <div class="comment-time">${new Date(c.created_at).toLocaleDateString('vi-VN')}</div>
-                </div>
-            </div>
-            `;
-        }).join('');
-    } catch(e) {
-        list.innerHTML = '<p style="color:red; padding:10px;">Lỗi tải bình luận.</p>';
-    }
+    });
 }
+
+function setRating(postId, val) {
+    const container = document.getElementById(`star-rating-${postId}`);
+    if (!container) return;
+    container.dataset.value = val;
+    highlightStars(postId, val);
+}
+
+function resetStars(postId) {
+    const container = document.getElementById(`star-rating-${postId}`);
+    if (!container) return;
+    const val = parseInt(container.dataset.value) || 0;
+    highlightStars(postId, val);
+}
+
+// Global exposure for event handlers
+window.togglePostSection = togglePostSection;
+window.submitRating = submitRating;
+window.submitComment = submitComment;
+window.highlightStars = highlightStars;
+window.setRating = setRating;
+window.resetStars = resetStars;
+window.deleteRating = deleteRating;
+window.editComment = editComment;
 
 async function deleteComment(commentId, postId) {
     if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
@@ -625,63 +806,54 @@ async function deleteComment(commentId, postId) {
     }
 }
 
-function editComment(commentId, oldContent, postId) {
-    const textNode = document.getElementById(`comment-text-${commentId}`);
-    if (!textNode) return;
-    
-    textNode.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:8px; margin-top:5px;">
-            <textarea id="edit-input-${commentId}" rows="2" style="width:100%; border-radius:8px; padding:10px; border:1px solid #ddd; font-family:inherit; resize:vertical; outline:none;">${oldContent}</textarea>
-            <div style="display:flex; gap:8px; justify-content:flex-end;">
-                <button onclick="loadComments(${postId})" style="background:#e4e6eb; color:#050505; border:none; padding:6px 14px; border-radius:15px; cursor:pointer; font-size:13px; font-weight:600;">Hủy</button>
-                <button onclick="saveEditComment(${commentId}, ${postId})" style="background:var(--primary-color); color:white; border:none; padding:6px 14px; border-radius:15px; cursor:pointer; font-size:13px; font-weight:600;">Lưu thay đổi</button>
-            </div>
-        </div>
-    `;
-}
-
-async function saveEditComment(commentId, postId) {
-    const input = document.getElementById(`edit-input-${commentId}`);
-    if (!input) return;
-    const newContent = input.value.trim();
-    if (!newContent) {
-        alert('Nội dung bình luận không được để trống.');
-        return;
-    }
-    
+async function editComment(commentId, postId, oldContent) {
+    const newContent = prompt('Sửa bình luận của bạn:', oldContent);
+    if (!newContent || newContent === oldContent) return;
     try {
         await apiFetch(`/comments/${commentId}/`, {
             method: 'PATCH',
             body: JSON.stringify({ content: newContent })
         });
         loadComments(postId);
-    } catch(e) {
-        alert('Không thể cập nhật bình luận. Vui lòng thử lại!');
+    } catch (e) { alert('Lỗi sửa bình luận.'); }
+}
+window.deleteComment = deleteComment;
+
+async function loadPostDetail(id) {
+    const container = document.getElementById('post-detail-container');
+    if (!container) return;
+    try {
+        const post = await apiFetch(`/posts/${id}/`);
+        if (!post) return;
+        
+        container.innerHTML = `
+            <div class="card detail-card" style="padding:0;">
+                <img src="${post.thumbnail || 'https://picsum.photos/seed/food/800/600'}" style="width:100%; height:400px; object-fit:cover;">
+                <div style="padding:24px;">
+                    <h1>${post.title}</h1>
+                    <p style="color: grey; margin-bottom: 20px;">${post.region_name} · ${new Date(post.created_at).toLocaleDateString('vi-VN')}</p>
+                    
+                    <h3>Giới thiệu</h3>
+                    <p>${post.content}</p>
+                    
+                    <h3 style="margin-top:20px;">Nguyên liệu</h3>
+                    <p>${post.ingredients}</p>
+                    
+                    <h3 style="margin-top:20px;">Cách thực hiện</h3>
+                    <p>${post.recipe}</p>
+                </div>
+                <div style="padding:24px; border-top:1px solid #eee;">
+                    <h3 style="margin-top:20px;">Bình luận</h3>
+                    <div id="comments-list-${id}"></div>
+                </div>
+            </div>
+        `;
+        loadComments(id);
+    } catch (e) {
+        container.innerHTML = '<p>Lỗi tải dữ liệu.</p>';
     }
 }
-
-async function submitComment(postId) {
-    const token = localStorage.getItem('access_token');
-    if (!token) { alert('Vui lòng đăng nhập để bình luận!'); return; }
-    const input = document.getElementById(`comment-input-${postId}`);
-    const content = input?.value.trim();
-    if (!content) return;
-    try {
-        await apiFetch('/comments/', {
-            method: 'POST',
-            body: JSON.stringify({ post: postId, content })
-        });
-        input.value = '';
-        loadComments(postId);
-    } catch(e) { alert('Không thể gửi bình luận.'); }
-}
-
-window.submitRating = submitRating;
-window.submitComment = submitComment;
-window.deleteComment = deleteComment;
-window.editComment = editComment;
-window.saveEditComment = saveEditComment;
-window.toggleReaction = toggleReaction;
+window.loadPostDetail = loadPostDetail;
 
 async function initCreatePostPage() {
     const form = document.getElementById('create-post-form');
@@ -720,14 +892,25 @@ async function performSearch(query) {
     const countEl = document.getElementById('search-count');
     if (!list) return;
     try {
-        const posts = await apiFetch('/posts/');
-        const filtered = posts.filter(p => p.title.toLowerCase().includes(query.toLowerCase()));
+        const posts = await apiFetch('/posts/?status=Active');
+        const filtered = posts.filter(p => 
+            p.title.toLowerCase().includes(query.toLowerCase()) || 
+            (p.content && p.content.toLowerCase().includes(query.toLowerCase())) ||
+            (p.region_name && p.region_name.toLowerCase().includes(query.toLowerCase()))
+        );
         document.getElementById('loading-results')?.remove();
+        list.innerHTML = '';
         if (filtered.length > 0) {
-            countEl.innerText = `Tìm thấy ${filtered.length} kết quả`;
+            if (countEl) countEl.innerText = `Tìm thấy ${filtered.length} kết quả cho "${query}"`;
             filtered.forEach(p => list.appendChild(createPostCard(p)));
-        } else { document.getElementById('no-results').style.display = 'block'; }
-    } catch (e) {}
+        } else { 
+            const noResults = document.getElementById('no-results');
+            if (noResults) noResults.style.display = 'block'; 
+            if (countEl) countEl.innerText = `Không tìm thấy kết quả nào cho "${query}"`;
+        }
+    } catch (e) {
+        console.error('Search error', e);
+    }
 }
 
 async function initAdminDashboard() {
@@ -776,6 +959,11 @@ async function initAdminDashboard() {
                     viewSubtitle.innerText = "Khám phá các món ăn đang thịnh hành.";
                     loadAdminTrending();
                     break;
+                case 'menu-reports':
+                    viewTitle.innerText = "Quản lý báo cáo";
+                    viewSubtitle.innerText = "Xử lý các bài viết bị cộng đồng báo cáo vi phạm.";
+                    loadAdminReports();
+                    break;
                 case 'menu-settings':
                     viewTitle.innerText = "Cài đặt hệ thống";
                     viewSubtitle.innerText = "Cấu hình các tham số vận hành website.";
@@ -794,21 +982,21 @@ async function loadAdminOverview() {
         const stats = await apiFetch('/admin/stats/');
         contentArea.innerHTML = `
             <section class="stats-grid">
-                <div class="stat-card blue">
+                <div class="stat-card blue" style="cursor:pointer;" onclick="document.getElementById('menu-users').click()">
                     <div class="stat-icon blue"><i class="fas fa-users"></i></div>
                     <div class="stat-info">
                         <h3>Tổng người dùng</h3>
                         <div class="value">${stats.total_users.toLocaleString()}</div>
                     </div>
                 </div>
-                <div class="stat-card green">
+                <div class="stat-card green" style="cursor:pointer;" onclick="document.getElementById('menu-posts').click()">
                     <div class="stat-icon green"><i class="fas fa-edit"></i></div>
                     <div class="stat-info">
                         <h3>Tổng bài đăng</h3>
                         <div class="value">${stats.total_posts.toLocaleString()}</div>
                     </div>
                 </div>
-                <div class="stat-card red">
+                <div class="stat-card red" style="cursor:pointer;" onclick="document.getElementById('menu-reports').click()">
                     <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
                     <div class="stat-info">
                         <h3>Báo cáo chưa xử lý</h3>
@@ -818,12 +1006,25 @@ async function loadAdminOverview() {
             </section>
             <div class="dashboard-content-grid">
                 <div class="chart-card">
-                    <div class="card-header"><h3>Xu hướng bài đăng</h3></div>
+                    <div class="card-header"><h3>Thống kê bài viết theo vùng miền</h3></div>
                     <div class="chart-placeholder">
-                        <div class="bar" style="height: 60%"></div>
-                        <div class="bar alt" style="height: 80%"></div>
-                        <div class="bar" style="height: 40%"></div>
+                        ${stats.trending_dishes ? stats.trending_dishes.slice(0, 5).map((d, i) => `
+                            <div class="bar ${i % 2 === 0 ? '' : 'alt'}" style="height: ${40 + (i * 10)}%" title="${d.title}"></div>
+                        `).join('') : '<div class="bar" style="height: 60%"></div>'}
                     </div>
+                </div>
+                <div class="top-dishes-card">
+                    <div class="card-header"><h3>Món ăn mới nhất</h3></div>
+                    <ul class="dish-list">
+                        ${stats.trending_dishes ? stats.trending_dishes.slice(0, 3).map(d => `
+                            <li class="dish-item">
+                                <div class="dish-meta">
+                                    <h4 style="margin:0;">${d.title}</h4>
+                                    <p style="margin:0; font-size:12px; color:#888;">${d.region__region_name}</p>
+                                </div>
+                            </li>
+                        `).join('') : '<li>Chưa có dữ liệu</li>'}
+                    </ul>
                 </div>
             </div>
         `;
@@ -1291,6 +1492,71 @@ async function saveAdminSettings() {
     }, 800);
 }
 
+async function loadAdminReports() {
+    const contentArea = document.getElementById('admin-content-area');
+    try {
+        const reports = await apiFetch('/reports/');
+        contentArea.innerHTML = `
+            <div class="admin-content-card">
+                <div class="admin-section-header">
+                    <h3><i class="fas fa-exclamation-circle"></i> Danh sách báo cáo vi phạm</h3>
+                    <div class="badge badge-pending">${reports.filter(r => r.process_status === 'Pending').length} báo cáo mới</div>
+                </div>
+                
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Bài viết</th>
+                                <th>Người báo cáo</th>
+                                <th>Lý do</th>
+                                <th>Ngày báo</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${reports.map(r => `
+                                <tr>
+                                    <td>
+                                        <a href="chitiet.html?id=${r.post}" target="_blank" style="font-weight:700; color:var(--primary-color);">#${r.post}</a>
+                                    </td>
+                                    <td>${r.user_name || 'Người dùng'}</td>
+                                    <td><div style="max-width:200px; font-size:13px; color:#666;">${r.reason}</div></td>
+                                    <td>${new Date(r.created_at).toLocaleDateString('vi-VN')}</td>
+                                    <td><span class="badge ${r.process_status === 'Pending' ? 'badge-pending' : 'badge-active'}">${r.process_status}</span></td>
+                                    <td class="admin-actions">
+                                        ${r.process_status === 'Pending' ? `
+                                            <button class="btn-admin btn-approve" title="Xử lý xong" onclick="moderateReport(${r.report_id}, 'Processed')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-admin btn-reject" title="Bỏ qua" onclick="moderateReport(${r.report_id}, 'Dismissed')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        ` : '<span style="color:#999; font-size:12px;">Đã xử lý</span>'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        contentArea.innerHTML = '<p>Lỗi tải báo cáo.</p>';
+    }
+}
+
+async function moderateReport(id, status) {
+    try {
+        await apiFetch(`/reports/${id}/`, {
+            method: 'PATCH',
+            body: JSON.stringify({ process_status: status })
+        });
+        loadAdminReports();
+    } catch (e) { alert('Thao tác thất bại.'); }
+}
+
 async function loadAdminTrending() {
     const contentArea = document.getElementById('admin-content-area');
     try {
@@ -1339,6 +1605,7 @@ window.closeAdminModal = closeAdminModal;
 window.deleteRegion = deleteRegion;
 window.saveAdminSettings = saveAdminSettings;
 window.loadAdminTrending = loadAdminTrending;
+window.moderateReport = moderateReport;
 
 async function initRegionPage() {
     const list = document.getElementById('post-list');
@@ -1396,26 +1663,40 @@ async function initTrendingPage() {
     const container = document.getElementById('trending-posts-container');
     if (!container) return;
     try {
-        const posts = await apiFetch('/posts/?status=Active');
+        const posts = await apiFetch('/public/cuisine-data/');
         if (posts) {
+            // Sort by average rating descending
+            const trending = posts.sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0)).slice(0, 10);
             container.innerHTML = '';
-            posts.slice(0, 5).forEach((p, i) => {
-                const card = createPostCard(p);
-                const badge = document.createElement('div');
-                badge.style = "padding:10px; color:var(--primary-color); font-weight:bold;";
-                badge.innerHTML = `#${i + 1} THỊNH HÀNH`;
-                card.prepend(badge);
-                container.appendChild(card);
-            });
+            for (const p of trending) {
+                // Fetch full post details for createPostCard
+                const fullPost = await apiFetch(`/posts/${p.post_id}/`);
+                if (fullPost) {
+                    const card = createPostCard(fullPost);
+                    const badge = document.createElement('div');
+                    badge.style = "padding:10px 16px; color:var(--primary-color); font-weight:bold; font-size:12px; display:flex; align-items:center; gap:8px;";
+                    badge.innerHTML = `<i class="fas fa-fire"></i> THỊNH HÀNH (Đánh giá: ${p.avg_rating ? p.avg_rating.toFixed(1) : '---'} ★)`;
+                    card.prepend(badge);
+                    container.appendChild(card);
+                }
+            }
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error('Error loading trending posts', e);
+    }
 }
 
 async function toggleFavorite(postId) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        alert('Vui lòng đăng nhập để lưu món ăn!');
+        window.location.href = 'login.html';
+        return;
+    }
     try {
         await apiFetch('/favorites/', { method: 'POST', body: JSON.stringify({ post: postId }) });
         alert('Đã cập nhật danh sách yêu thích!');
-    } catch (e) { alert('Vui lòng đăng nhập!'); }
+    } catch (e) { alert('Lỗi: ' + e.message); }
 }
 
 async function reportPost(postId) {
@@ -1429,3 +1710,201 @@ async function reportPost(postId) {
 
 window.toggleFavorite = toggleFavorite;
 window.reportPost = reportPost;
+
+async function initSettingsPage() {
+    // Initial load
+    switchSettingsTab('tab-account');
+}
+
+async function switchSettingsTab(tabId) {
+    const container = document.querySelector('.feed-container');
+    const menuItems = document.querySelectorAll('.sidebar-left .menu-item');
+    if (!container) return;
+
+    // Update active class
+    menuItems.forEach(item => {
+        item.classList.toggle('active', item.id === tabId);
+        const span = item.querySelector('span');
+        if (span) span.style.color = item.id === tabId ? 'var(--primary-color)' : '';
+        if (span) span.style.fontWeight = item.id === tabId ? 'bold' : 'normal';
+    });
+
+    container.innerHTML = '<div style="text-align:center; padding:50px;"><i class="fas fa-spinner fa-spin fa-2x" style="color:var(--primary-color);"></i></div>';
+
+    switch (tabId) {
+        case 'tab-account':
+            await renderAccountSettings(container);
+            break;
+        case 'tab-notifications':
+            renderNotificationSettings(container);
+            break;
+        case 'tab-security':
+            renderSecuritySettings(container);
+            break;
+        case 'tab-appearance':
+            renderAppearanceSettings(container);
+            break;
+    }
+}
+
+window.switchSettingsTab = switchSettingsTab;
+
+async function renderAccountSettings(container) {
+    try {
+        const user = await apiFetch('/auth/me/');
+        if (!user) return;
+        container.innerHTML = `
+            <div class="card" style="padding: 30px;">
+                <h2 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Cài Đặt Tài Khoản</h2>
+                <form id="profile-settings-form" style="display: flex; flex-direction: column; gap: 20px;">
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || user.username)}&background=f7630c&color=fff&size=200" alt="User Avatar" id="settings-avatar" style="width: 80px; height: 80px; border-radius: 50%;">
+                        <div>
+                            <button type="button" class="btn-view-recipe" style="background-color: var(--primary-color); color: white;">Đổi ảnh đại diện</button>
+                            <button type="button" class="btn-view-recipe" style="background-color: #f1f1f1; color: #333; margin-left: 10px;">Xóa ảnh</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Tên hiển thị</label>
+                        <input type="text" id="settings-fullname" value="${user.full_name || ''}" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Email</label>
+                        <input type="email" id="settings-email" value="${user.email || ''}" disabled style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #f9f9f9;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Tiểu sử (Slogan)</label>
+                        <textarea id="settings-bio" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; resize: vertical;">${user.bio || ''}</textarea>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Trạng thái tài khoản</label>
+                        <input type="text" id="settings-status" value="${user.status || 'Active'}" disabled style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #f9f9f9;">
+                    </div>
+                    <div style="margin-top: 10px; text-align: right;">
+                        <button type="button" class="btn-view-recipe" style="background-color: #f1f1f1; color: #333;" onclick="window.location.href='profile.html'">Hủy</button>
+                        <button type="submit" class="btn-view-recipe" style="background-color: var(--primary-color); color: white; margin-left: 10px;">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card" style="padding: 30px; margin-top: 20px;">
+                <h3 style="color: #e74c3c; margin-bottom: 15px;">Vùng Nguy Hiểm</h3>
+                <p style="color: #666; margin-bottom: 15px;">Khi xóa tài khoản, tất cả dữ liệu, bài viết và thông tin của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.</p>
+                <button class="btn-view-recipe" style="background-color: #ffebee; color: #c0392b; border: 1px solid #ffcdd2;">Xóa tài khoản</button>
+            </div>
+        `;
+
+        const form = document.getElementById('profile-settings-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fullName = document.getElementById('settings-fullname').value;
+            const bio = document.getElementById('settings-bio').value;
+            try {
+                await apiFetch('/auth/me/', {
+                    method: 'PATCH',
+                    body: JSON.stringify({ full_name: fullName, bio: bio })
+                });
+                alert('Cập nhật thông tin thành công!');
+                updateUserUI();
+            } catch (err) {
+                alert('Lỗi cập nhật: ' + err.message);
+            }
+        });
+    } catch (e) {
+        container.innerHTML = '<p style="color:red;">Lỗi tải thông tin người dùng.</p>';
+    }
+}
+
+function renderNotificationSettings(container) {
+    container.innerHTML = `
+        <div class="card" style="padding: 30px;">
+            <h2 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Cài Đặt Thông Báo</h2>
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">Thông báo trình duyệt</div>
+                        <div style="font-size: 14px; color: #666;">Nhận thông báo khi có người bình luận hoặc yêu thích món ăn của bạn.</div>
+                    </div>
+                    <input type="checkbox" checked style="width: 20px; height: 20px; accent-color: var(--primary-color);">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">Email thông báo</div>
+                        <div style="font-size: 14px; color: #666;">Nhận bản tin hàng tuần về các món ăn đang hot.</div>
+                    </div>
+                    <input type="checkbox" style="width: 20px; height: 20px; accent-color: var(--primary-color);">
+                </div>
+                <button class="btn-view-recipe" style="background-color: var(--primary-color); color: white; width: fit-content; align-self: flex-end;">Lưu cài đặt</button>
+            </div>
+        </div>
+    `;
+}
+
+function renderSecuritySettings(container) {
+    container.innerHTML = `
+        <div class="card" style="padding: 30px;">
+            <h2 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Bảo Mật & Mật Khẩu</h2>
+            <form style="display: flex; flex-direction: column; gap: 20px;">
+                <div>
+                    <label style="display: block; font-weight: 500; margin-bottom: 5px;">Mật khẩu hiện tại</label>
+                    <input type="password" placeholder="••••••••" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 500; margin-bottom: 5px;">Mật khẩu mới</label>
+                    <input type="password" placeholder="••••••••" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 500; margin-bottom: 5px;">Xác nhận mật khẩu mới</label>
+                    <input type="password" placeholder="••••••••" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+                <button type="submit" class="btn-view-recipe" style="background-color: var(--primary-color); color: white; width: fit-content; align-self: flex-end;">Cập nhật mật khẩu</button>
+            </form>
+        </div>
+    `;
+}
+
+function renderAppearanceSettings(container) {
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    
+    container.innerHTML = `
+        <div class="card" style="padding: 30px;">
+            <h2 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Tùy Chỉnh Giao Diện</h2>
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 15px;">Chế độ hiển thị</div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div onclick="setTheme('light')" class="theme-option ${currentTheme === 'light' ? 'active' : ''}" style="flex: 1; min-width: 120px; border: 2px solid ${currentTheme === 'light' ? 'var(--primary-color)' : '#ddd'}; border-radius: 10px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s;">
+                            <i class="fas fa-sun" style="font-size: 24px; color: #f1c40f; margin-bottom: 10px;"></i>
+                            <div>Sáng</div>
+                        </div>
+                        <div onclick="setTheme('dark')" class="theme-option ${currentTheme === 'dark' ? 'active' : ''}" style="flex: 1; min-width: 120px; border: 2px solid ${currentTheme === 'dark' ? 'var(--primary-color)' : '#ddd'}; border-radius: 10px; padding: 15px; text-align: center; cursor: pointer; background: #2d3436; color: white; transition: all 0.2s;">
+                            <i class="fas fa-moon" style="font-size: 24px; color: #f1c40f; margin-bottom: 10px;"></i>
+                            <div>Tối</div>
+                        </div>
+                        <div onclick="setTheme('pink')" class="theme-option ${currentTheme === 'pink' ? 'active' : ''}" style="flex: 1; min-width: 120px; border: 2px solid ${currentTheme === 'pink' ? 'var(--primary-color)' : '#ddd'}; border-radius: 10px; padding: 15px; text-align: center; cursor: pointer; background: #ffc0cb; color: #4a4a4a; transition: all 0.2s;">
+                            <i class="fas fa-heart" style="font-size: 24px; color: #ff69b4; margin-bottom: 10px;"></i>
+                            <div>Hồng</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 14px; color: var(--text-secondary);">Giao diện sẽ được áp dụng ngay lập tức và lưu lại cho lần truy cập sau.</div>
+            </div>
+        </div>
+    `;
+}
+
+function setTheme(theme) {
+    localStorage.setItem('theme', theme);
+    applyTheme();
+    
+    // Update UI selection
+    const options = document.querySelectorAll('.theme-option');
+    options.forEach(opt => {
+        const isThis = (theme === 'light' && opt.innerText.includes('Sáng')) || 
+                       (theme === 'dark' && opt.innerText.includes('Tối')) ||
+                       (theme === 'pink' && opt.innerText.includes('Hồng'));
+        opt.style.borderColor = isThis ? 'var(--primary-color)' : '#ddd';
+        opt.style.borderWidth = isThis ? '2px' : '2px'; // Keep border for layout stability
+    });
+}
+
+window.setTheme = setTheme;

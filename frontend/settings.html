@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cài Đặt - Ẩm Thực 3 Miền</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/style.css?v=2.5">
+    <link rel="stylesheet" href="/static/style.css?v=3.4">
 </head>
 <body>
     <!-- Shared Header -->
@@ -41,19 +41,19 @@
         <!-- Sidebar Left -->
         <aside class="sidebar-left">
             <ul class="sidebar-menu">
-                <li class="menu-item active">
+                <li class="menu-item active" id="tab-account" onclick="switchSettingsTab('tab-account')">
                     <i class="fas fa-user-cog menu-icon" style="background: var(--primary-color);"></i>
-                    <span style="font-weight: bold; color: var(--primary-color);">Tài khoản</span>
+                    <span style="font-weight: bold;">Tài khoản</span>
                 </li>
-                <li class="menu-item">
+                <li class="menu-item" id="tab-notifications" onclick="switchSettingsTab('tab-notifications')">
                     <i class="fas fa-bell menu-icon" style="background: #e67e22;"></i>
                     <span>Thông báo</span>
                 </li>
-                <li class="menu-item">
+                <li class="menu-item" id="tab-security" onclick="switchSettingsTab('tab-security')">
                     <i class="fas fa-shield-alt menu-icon" style="background: #27ae60;"></i>
                     <span>Bảo mật</span>
                 </li>
-                <li class="menu-item">
+                <li class="menu-item" id="tab-appearance" onclick="switchSettingsTab('tab-appearance')">
                     <i class="fas fa-paint-brush menu-icon" style="background: #8e44ad;"></i>
                     <span>Giao diện</span>
                 </li>
@@ -65,9 +65,9 @@
             <div class="card" style="padding: 30px;">
                 <h2 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Cài Đặt Tài Khoản</h2>
                 
-                <form style="display: flex; flex-direction: column; gap: 20px;">
+                <form id="profile-settings-form" style="display: flex; flex-direction: column; gap: 20px;">
                     <div style="display: flex; gap: 20px; align-items: center;">
-                        <img src="https://i.pravatar.cc/150?u=user" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%;">
+                        <img src="https://i.pravatar.cc/150?u=user" alt="User Avatar" id="settings-avatar" style="width: 80px; height: 80px; border-radius: 50%;">
                         <div>
                             <button type="button" class="btn-view-recipe" style="background-color: var(--primary-color); color: white;">Đổi ảnh đại diện</button>
                             <button type="button" class="btn-view-recipe" style="background-color: #f1f1f1; color: #333; margin-left: 10px;">Xóa ảnh</button>
@@ -76,27 +76,27 @@
                     
                     <div>
                         <label style="display: block; font-weight: 500; margin-bottom: 5px;">Tên hiển thị</label>
-                        <input type="text" value="Người Dùng Mẫu" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                        <input type="text" id="settings-fullname" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
                     </div>
                     
                     <div>
                         <label style="display: block; font-weight: 500; margin-bottom: 5px;">Email</label>
-                        <input type="email" value="user@example.com" disabled style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #f9f9f9;">
+                        <input type="email" id="settings-email" disabled style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #f9f9f9;">
                     </div>
                     
                     <div>
-                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Tiểu sử</label>
-                        <textarea rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; resize: vertical;">Đam mê nấu ăn từ nhỏ. Thích khám phá các món ăn truyền thống Việt Nam.</textarea>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Tiểu sử (Slogan)</label>
+                        <textarea id="settings-bio" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; resize: vertical;"></textarea>
                     </div>
 
                     <div>
-                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Nơi sống</label>
-                        <input type="text" value="Hà Nội, Việt Nam" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Trạng thái tài khoản</label>
+                        <input type="text" id="settings-status" disabled style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #f9f9f9;">
                     </div>
                     
                     <div style="margin-top: 10px; text-align: right;">
-                        <button type="button" class="btn-view-recipe" style="background-color: #f1f1f1; color: #333;">Hủy</button>
-                        <button type="button" class="btn-view-recipe" style="background-color: var(--primary-color); color: white; margin-left: 10px;">Lưu thay đổi</button>
+                        <button type="button" class="btn-view-recipe" style="background-color: #f1f1f1; color: #333;" onclick="window.location.href='profile.html'">Hủy</button>
+                        <button type="submit" class="btn-view-recipe" style="background-color: var(--primary-color); color: white; margin-left: 10px;">Lưu thay đổi</button>
                     </div>
                 </form>
             </div>
@@ -126,6 +126,6 @@
             <span>Cá nhân</span>
         </a>
     </nav>
-    <script src="/static/script.js?v=2.8"></script>
+    <script src="/static/script.js?v=2.9"></script>
 </body>
 </html>
