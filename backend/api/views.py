@@ -3,13 +3,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
+from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-
-from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report, Reaction
+from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report, Reaction, Follow, Notification
 from .serializers import (
     RoleSerializer, UserSerializer, RegionSerializer, PostSerializer, 
     CommentSerializer, RatingSerializer, FavoriteSerializer, ReportSerializer,
-    ReactionSerializer
+    ReactionSerializer, FollowSerializer, NotificationSerializer
 )
 
 # Authentication Views
@@ -37,13 +37,21 @@ def login(request):
 @api_view(['GET', 'PATCH'])
 @permission_classes([permissions.IsAuthenticated])
 def me(request):
+    user = request.user
     if request.method == 'PATCH':
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = UserSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    return Response(UserSerializer(request.user).data)
+    
+    data = UserSerializer(user).data
+    data.update({
+        'post_count': user.posts.filter(status='Active').count(),
+        'follower_count': user.followers.count(),
+        'following_count': user.following.count(),
+    })
+    return Response(data)
 
 # ViewSets
 class RegionViewSet(viewsets.ModelViewSet):
@@ -83,13 +91,29 @@ class PostViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(contributor=self.request.user)
+        post = serializer.save(contributor=self.request.user)
+        # Notify followers
+        followers = Follow.objects.filter(followed=self.request.user)
+        for follow in followers:
+            Notification.objects.create(
+                recipient=follow.follower,
+                actor=self.request.user,
+                action_type='new_post',
+                post=post,
+                is_read=False
+            )
 
     def update(self, request, *args, **kwargs):
-        # Allow admins to update status even if they aren't the author
-        if request.user.role and request.user.role.role_name == 'Admin':
-            return super().update(request, *args, **kwargs)
+        post = self.get_object()
+        if post.contributor != request.user and (not request.user.role or request.user.role.role_name != 'Admin'):
+            return Response({"error": "You do not have permission to edit this post."}, status=403)
         return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        post = self.get_object()
+        if post.contributor != request.user and (not request.user.role or request.user.role.role_name != 'Admin'):
+            return Response({"error": "You do not have permission to delete this post."}, status=403)
+        return super().destroy(request, *args, **kwargs)
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
@@ -176,12 +200,34 @@ class ReactionViewSet(viewsets.ModelViewSet):
         post = serializer.validated_data.get('post')
         reaction_type = serializer.validated_data.get('reaction_type')
         
-        # update_or_create logic
         reaction, created = Reaction.objects.update_or_create(
             user=self.request.user, 
             post=post,
             defaults={'reaction_type': reaction_type}
         )
+
+class FollowViewSet(viewsets.ModelViewSet):
+    queryset = Follow.objects.all()
+    serializer_class = FollowSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(follower=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(follower=self.request.user)
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(recipient=self.request.user).order_by('-created_at')
+
+    def partial_update(self, request, *args, **kwargs):
+        # Allow marking as read
+        return super().partial_update(request, *args, **kwargs)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
@@ -211,6 +257,39 @@ def public_cuisine_data(request):
             'title': p.title,
             'region_name': p.region.region_name if p.region else None,
             'author': p.contributor.full_name if p.contributor else p.contributor.username,
-            'avg_rating': p.avg_rating
+            'avg_rating': p.avg_rating,
+            'thumbnail': p.thumbnail
+        })
+    return Response(data)
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def user_profile(request, pk):
+    from django.db.models import Avg
+    user = get_object_or_404(User, pk=pk)
+    return Response({
+        'id': user.id,
+        'username': user.username,
+        'full_name': user.full_name,
+        'bio': user.bio,
+        'passion': user.passion,
+        'location': user.location,
+        'date_joined': user.date_joined,
+        'post_count': user.posts.filter(status='Active').count(),
+        'follower_count': user.followers.count(),
+        'following_count': user.following.count(),
+    })
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def followed_users(request):
+    follows = Follow.objects.filter(follower=request.user)
+    data = []
+    for f in follows:
+        u = f.followed
+        data.append({
+            'id': u.id,
+            'username': u.username,
+            'full_name': u.full_name
         })
     return Response(data)

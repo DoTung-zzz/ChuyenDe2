@@ -40,19 +40,19 @@
         <aside class="sidebar-left">
             <h3 style="padding: 10px 16px;">Bộ lọc</h3>
             <ul class="sidebar-menu">
-                <li class="menu-item">
+                <li class="menu-item active" onclick="applyFilter('Tất cả', this)">
                     <div class="menu-icon specialty"><i class="fas fa-filter"></i></div>
                     <span>Tất cả</span>
                 </li>
-                <li class="menu-item">
+                <li class="menu-item" onclick="applyFilter('Miền Bắc', this)">
                     <div class="menu-icon specialty" style="background: var(--fb-blue);"><i class="fas fa-map-marker-alt"></i></div>
                     <span>Miền Bắc</span>
                 </li>
-                <li class="menu-item">
+                <li class="menu-item" onclick="applyFilter('Miền Trung', this)">
                     <div class="menu-icon specialty" style="background: #45bd62;"><i class="fas fa-map-marker-alt"></i></div>
                     <span>Miền Trung</span>
                 </li>
-                <li class="menu-item">
+                <li class="menu-item" onclick="applyFilter('Miền Nam', this)">
                     <div class="menu-icon specialty" style="background: #f3425f;"><i class="fas fa-map-marker-alt"></i></div>
                     <span>Miền Nam</span>
                 </li>
@@ -109,7 +109,7 @@
             <span>Cá nhân</span>
         </a>
     </nav>
-    <script src="/static/script.js?v=2.9"></script>
+    <script src="/static/script.js?v=7.2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);

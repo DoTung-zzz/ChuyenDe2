@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,16 +13,21 @@
             margin: auto;
             padding: 30px;
         }
+
         .form-group {
             margin-bottom: 20px;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: var(--text-main);
         }
-        .form-group input, .form-group textarea, .form-group select {
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 12px 16px;
             border: 1px solid var(--divider-color);
@@ -30,9 +36,13 @@
             outline: none;
             transition: border-color 0.2s;
         }
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
             border-color: var(--primary-color);
         }
+
         .image-preview-container {
             width: 100%;
             height: 250px;
@@ -46,14 +56,17 @@
             cursor: pointer;
             overflow: hidden;
         }
+
         .image-preview-container:hover {
             border-color: var(--primary-color);
         }
+
         .image-preview-container img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
         .btn-submit {
             background-color: var(--primary-color);
             color: white;
@@ -67,10 +80,12 @@
             box-shadow: 0 4px 12px rgba(247, 99, 12, 0.2);
             transition: transform 0.2s, box-shadow 0.2s;
         }
+
         .btn-submit:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(247, 99, 12, 0.3);
         }
+
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -78,6 +93,7 @@
         }
     </style>
 </head>
+
 <body>
     <header class="header">
         <div class="header-left">
@@ -110,15 +126,25 @@
     <main class="main-container">
         <aside class="sidebar-left">
             <ul class="sidebar-menu">
-                <li class="menu-item"><a href="index.html" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px;"><i class="fas fa-arrow-left"></i> <span>Quay lại trang chủ</span></a></li>
-                <li class="menu-item"><div class="menu-icon specialty"><i class="fas fa-star"></i></div> <span>Đặc sản vùng miền</span></li>
-                <li class="menu-item"><div class="menu-icon saved"><i class="fas fa-bookmark"></i></div> <span>Món đã lưu</span></li>
+                <li class="menu-item"><a href="index.html"
+                        style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px;"><i
+                            class="fas fa-arrow-left"></i> <span>Quay lại trang chủ</span></a></li>
+                <li class="menu-item">
+                    <a href="dacsan.html" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px;">
+                        <div class="menu-icon specialty"><i class="fas fa-star"></i></div> <span>Đặc sản vùng miền</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="saved.html" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px;">
+                        <div class="menu-icon saved"><i class="fas fa-bookmark"></i></div> <span>Món đã lưu</span>
+                    </a>
+                </li>
             </ul>
         </aside>
 
         <section class="feed-container">
             <div class="card form-container">
-                <h1 style="margin-bottom: 24px; text-align: center;">Chia sẻ món ngon miền Nam</h1>
+                <h1 style="margin-bottom: 24px; text-align: center;">Chia sẻ món ngon 3 miền </h1>
                 <form id="create-post-form">
                     <div class="form-group">
                         <label for="title">Tên món ăn</label>
@@ -127,34 +153,44 @@
 
                     <div class="grid-2">
                         <div class="form-group">
-                            <label for="region">Vùng miền</label>
+                            <label for="region">Vùng miền <span style="color: red;">*</span></label>
                             <select id="region" required>
                                 <option value="">Chọn vùng miền</option>
                                 <!-- Regions will be loaded from API -->
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="thumbnail">Link hình ảnh món ăn</label>
-                            <input type="text" id="thumbnail" placeholder="Dán link ảnh tiêu biểu..." required>
+                            <label for="province">Tỉnh / Thành phố <span style="font-weight: 400; color: #999; font-size: 13px;">(không bắt buộc)</span></label>
+                            <select id="province">
+                                <option value="">-- Để trống --</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Xem trước hình ảnh</label>
-                        <div class="image-preview-container" id="image-preview">
+                        <label for="thumbnail">Link hình ảnh món ăn <span style="color: red;">*</span></label>
+                        <input type="text" id="thumbnail" placeholder="Dán link ảnh hoặc click vào khung dưới để tải ảnh lên..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Xem trước hình ảnh <span style="font-weight: 400; color: #999; font-size: 13px;">(Nhấp để tải ảnh lên)</span></label>
+                        <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                        <div class="image-preview-container" id="image-preview" onclick="document.getElementById('image-upload').click();" title="Click để tải ảnh lên">
                             <i class="fas fa-image fa-3x" style="color: var(--divider-color);"></i>
-                            <p style="margin-left: 15px; color: grey;">Chưa có ảnh</p>
+                            <p style="margin-left: 15px; color: grey;">Chưa có ảnh. Click để tải ảnh lên.</p>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="content">Giới thiệu ngắn gọn / Câu chuyện văn hóa</label>
-                        <textarea id="content" rows="3" placeholder="Chia sẻ về nguồn gốc hoặc ý nghĩa của món ăn này..."></textarea>
+                        <textarea id="content" rows="3"
+                            placeholder="Chia sẻ về nguồn gốc hoặc ý nghĩa của món ăn này..."></textarea>
                     </div>
 
                     <div class="form-group">
                         <label for="ingredients">Nguyên liệu cần chuẩn bị</label>
-                        <textarea id="ingredients" rows="5" placeholder="Mỗi nguyên liệu một dòng..." required></textarea>
+                        <textarea id="ingredients" rows="5" placeholder="Mỗi nguyên liệu một dòng..."
+                            required></textarea>
                     </div>
 
                     <div class="form-group">
@@ -162,7 +198,8 @@
                         <textarea id="recipe" rows="8" placeholder="Bước 1: ... &#10;Bước 2: ..." required></textarea>
                     </div>
 
-                    <button type="submit" class="btn-submit">Đăng bài ngay <i class="fas fa-paper-plane" style="margin-left: 8px;"></i></button>
+                    <button type="submit" class="btn-submit">Đăng bài ngay <i class="fas fa-paper-plane"
+                            style="margin-left: 8px;"></i></button>
                     <p id="submit-status" style="margin-top: 15px; text-align: center; display: none;"></p>
                 </form>
             </div>
@@ -173,29 +210,49 @@
                 <h3>Mẹo nhỏ cho bạn</h3>
                 <ul class="sidebar-menu" style="margin-top: 15px;">
                     <li style="margin-bottom: 15px; font-size: 14px; color: var(--text-secondary);">
-                        <i class="fas fa-lightbulb" style="color: #f1c40f;"></i> Hãy sử dụng hình ảnh chất lượng cao để bài viết nổi bật hơn.
+                        <i class="fas fa-lightbulb" style="color: #f1c40f;"></i> Hãy sử dụng hình ảnh chất lượng cao để
+                        bài viết nổi bật hơn.
                     </li>
                     <li style="margin-bottom: 15px; font-size: 14px; color: var(--text-secondary);">
-                        <i class="fas fa-lightbulb" style="color: #f1c40f;"></i> Mô tả kỹ các bước thực hiện giúp người xem tham khảo dễ dàng hơn.
+                        <i class="fas fa-lightbulb" style="color: #f1c40f;"></i> Mô tả kỹ các bước thực hiện giúp người
+                        xem tham khảo dễ dàng hơn.
                     </li>
                 </ul>
             </div>
         </aside>
     </main>
 
-    <script src="/static/script.js?v=2.9"></script>
+    <script src="/static/script.js?v=7.1"></script>
     <script>
-        document.getElementById('thumbnail').addEventListener('input', function() {
-            const preview = document.getElementById('image-preview');
+        const thumbnailInput = document.getElementById('thumbnail');
+        const preview = document.getElementById('image-preview');
+        const uploadInput = document.getElementById('image-upload');
+
+        thumbnailInput.addEventListener('input', function () {
             const url = this.value;
             if (url) {
-                preview.innerHTML = `<img src="${url}" alt="Preview" onerror="this.innerHTML='Lỗi tải ảnh'; this.style.color='red';">`;
+                preview.innerHTML = `<img src="${url}" alt="Preview" onerror="this.innerHTML='<div style=\\'text-align:center\\'><i class=\\'fas fa-exclamation-triangle fa-2x\\' style=\\'color:red;\\'></i><br><p style=\\'color:red; margin-top:10px;\\'>Lỗi tải ảnh. Vui lòng kiểm tra lại link hoặc tải ảnh trực tiếp.</p></div>';">`;
             } else {
                 preview.innerHTML = `
                     <i class="fas fa-image fa-3x" style="color: var(--divider-color);"></i>
-                    <p style="margin-left: 15px; color: grey;">Chưa có ảnh</p>`;
+                    <p style="margin-left: 15px; color: grey;">Chưa có ảnh. Click để tải ảnh lên.</p>`;
+            }
+        });
+
+        uploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const base64String = event.target.result;
+                    thumbnailInput.value = base64String;
+                    // Trigger input event to update preview
+                    thumbnailInput.dispatchEvent(new Event('input'));
+                };
+                reader.readAsDataURL(file);
             }
         });
     </script>
 </body>
+
 </html>

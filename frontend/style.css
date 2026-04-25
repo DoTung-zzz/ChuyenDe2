@@ -35,11 +35,26 @@ body.pink-theme {
     padding: 0;
     box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    caret-color: transparent !important;
+    outline: none !important;
+}
+
+input, textarea, [contenteditable="true"], [contenteditable="true"] * {
+    caret-color: auto !important;
+    user-select: text !important;
 }
 
 body {
     background-color: var(--bg-color);
     color: var(--text-main);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+p, span, h1, h2, h3, h4, h5, h6, strong, em, li, b, i, a {
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 /* Header Styles */

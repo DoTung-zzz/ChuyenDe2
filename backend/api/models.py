@@ -15,6 +15,8 @@ class User(AbstractUser):
     # We add custom fields mapping to the SQL schema
     full_name = models.CharField(max_length=100)
     bio = models.TextField(max_length=500, blank=True, null=True)
+    passion = models.CharField(max_length=200, blank=True, null=True, default='Đam mê nấu ăn')
+    location = models.CharField(max_length=200, blank=True, null=True, default='Sống tại Hà Nội, Việt Nam')
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, default='Active')
     
@@ -61,6 +63,7 @@ class Post(models.Model):
     recipe = models.TextField(blank=True, null=True)
     thumbnail = models.TextField(blank=True, null=True)  # URL to image or path
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, related_name='posts')
+    province = models.CharField(max_length=100, blank=True, null=True)
     contributor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
     report_count = models.IntegerField(default=0)
@@ -160,3 +163,31 @@ class Reaction(models.Model):
 
     def __str__(self):
         return f"{self.user.username} reacted {self.reaction_type} to {self.post.title}"
+class Follow(models.Model):
+    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
+    followed = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('follower', 'followed')
+
+    def __str__(self):
+        return f"{self.follower.username} follows {self.followed.username}"
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('new_post', 'New Post'),
+        ('like', 'Like'),
+        ('comment', 'Comment')
+    ]
+    
+    notification_id = models.AutoField(primary_key=True)
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    actor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='actions')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
+    action_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.recipient.username}: {self.action_type}"

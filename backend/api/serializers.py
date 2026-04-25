@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report, Reaction
+from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report, Reaction, Follow, Notification
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'full_name', 'bio', 'role_name', 'status', 'password']
+        fields = ['id', 'username', 'email', 'full_name', 'bio', 'passion', 'location', 'role_name', 'status', 'password']
         extra_kwargs = {'password': {'write_only': True}}
         
     def create(self, validated_data):
@@ -62,9 +62,10 @@ class RatingSerializer(serializers.ModelSerializer):
         read_only_fields = ('user',)
 
 class FavoriteSerializer(serializers.ModelSerializer):
+    post_details = PostSerializer(source='post', read_only=True)
     class Meta:
         model = Favorite
-        fields = '__all__'
+        fields = ['favorite_id', 'post', 'post_details', 'created_at']
         read_only_fields = ('user',)
 
 class ReactionSerializer(serializers.ModelSerializer):
@@ -74,6 +75,27 @@ class ReactionSerializer(serializers.ModelSerializer):
         read_only_fields = ('user',)
 
 class ReportSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.full_name', read_only=True)
+    post_title = serializers.CharField(source='post.title', read_only=True)
+
     class Meta:
         model = Report
+        fields = '__all__'
+        read_only_fields = ('user',)
+
+class FollowSerializer(serializers.ModelSerializer):
+    follower_name = serializers.CharField(source='follower.full_name', read_only=True)
+    followed_name = serializers.CharField(source='followed.full_name', read_only=True)
+
+    class Meta:
+        model = Follow
+        fields = '__all__'
+        read_only_fields = ('follower',)
+
+class NotificationSerializer(serializers.ModelSerializer):
+    actor_name = serializers.CharField(source='actor.full_name', read_only=True)
+    post_title = serializers.CharField(source='post.title', read_only=True)
+
+    class Meta:
+        model = Notification
         fields = '__all__'

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hồ Sơ - Ẩm Thực 3 Miền</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/style.css?v=3.4">
+    <link rel="stylesheet" href="/static/style.css?v=6.0">
 </head>
 <body>
     <!-- Shared Header -->
@@ -79,7 +79,10 @@
                         <div style="text-align: center;"><strong id="profile-follower-count">0</strong><br><span style="color: grey; font-size: 14px;">Người theo dõi</span></div>
                         <div style="text-align: center;"><strong id="profile-following-count">0</strong><br><span style="color: grey; font-size: 14px;">Đang theo dõi</span></div>
                     </div>
-                    <button class="btn-view-recipe" style="background-color: var(--primary-color); color: white;">Chỉnh sửa hồ sơ</button>
+                    <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+                        <button id="edit-profile-btn" class="btn-view-recipe" style="background-color: var(--primary-color); color: white;">Chỉnh sửa hồ sơ</button>
+                        <button id="follow-btn" class="btn-view-recipe" style="background-color: #f1f1f1; color: #333; display: none;">Theo dõi</button>
+                    </div>
                 </div>
             </div>
 
@@ -105,15 +108,19 @@
                 <h3>THÔNG TIN</h3>
                 <ul class="suggestion-list" style="margin-top: 15px;">
                     <li style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px; color: #555;">
-                        <i class="fas fa-briefcase" style="width: 20px; text-align: center;"></i> Đam mê nấu ăn
+                        <i class="fas fa-briefcase" style="width: 20px; text-align: center;"></i> <span id="profile-passion">Đam mê nấu ăn</span>
                     </li>
                     <li style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px; color: #555;">
-                        <i class="fas fa-home" style="width: 20px; text-align: center;"></i> Sống tại Hà Nội, Việt Nam
-                    </li>
-                    <li style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px; color: #555;">
-                        <i class="fas fa-rss" style="width: 20px; text-align: center;"></i> Có 340 người theo dõi
+                        <i class="fas fa-home" style="width: 20px; text-align: center;"></i> <span id="profile-location">Sống tại Hà Nội, Việt Nam</span>
                     </li>
                 </ul>
+            </div>
+
+            <div class="suggestions-card card" style="margin-top: 20px;" id="followed-accounts-card">
+                <h3>ĐANG THEO DÕI</h3>
+                <div id="followed-list" style="margin-top: 15px;">
+                    <p style="font-size: 14px; color: #999;">Đang tải...</p>
+                </div>
             </div>
         </aside>
     </main>
@@ -135,6 +142,6 @@
             <span>Cá nhân</span>
         </a>
     </nav>
-    <script src="/static/script.js?v=2.9"></script>
+    <script src="/static/script.js?v=6.0"></script>
 </body>
 </html>

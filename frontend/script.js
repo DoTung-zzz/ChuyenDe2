@@ -281,6 +281,8 @@ function initPage() {
         initTrendingPage();
     } else if (path.includes('settings.html')) {
         initSettingsPage();
+    } else if (path.includes('thongbao.html')) {
+        initNotificationsPage();
     }
 }
 
@@ -383,6 +385,29 @@ async function loadFeed() {
         }
     } catch (err) { container.innerHTML = '<div class="card" style="text-align:center; padding:40px; color:red;">Lỗi kết nối server.</div>'; }
 
+    const suggestContainer = document.getElementById('suggested-posts-list');
+    if (suggestContainer) {
+        try {
+            const publicData = await apiFetch('/public/cuisine-data/');
+            if (publicData && publicData.length > 0) {
+                const topRated = publicData.sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0)).slice(0, 3);
+                suggestContainer.innerHTML = topRated.map(p => `
+                    <li class="suggestion-item">
+                        <img src="${p.thumbnail || 'https://picsum.photos/100'}" alt="Dish" style="object-fit: cover; width: 50px; height: 50px; border-radius: 8px;">
+                        <div class="suggest-info">
+                            <p class="dish-name" style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${p.title}</p>
+                            <button class="btn-view-recipe" onclick="window.location.href='chitiet.html?id=${p.post_id}'" style="font-size: 12px; padding: 4px 10px;">Xem công thức</button>
+                        </div>
+                    </li>
+                `).join('');
+            } else {
+                suggestContainer.innerHTML = '<div style="padding: 10px; color: grey; font-style: italic; font-size: 13px; text-align: center;">Chưa có gợi ý nào.</div>';
+            }
+        } catch (err) {
+            console.error("Failed to load suggestions", err);
+        }
+    }
+
     document.querySelector('.mock-input')?.addEventListener('click', () => {
         if (!localStorage.getItem('access_token')) {
             window.location.href = 'login.html';
@@ -392,16 +417,59 @@ async function loadFeed() {
     });
 }
 
+function timeAgo(dateInput) {
+    const date = new Date(dateInput);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'Vừa xong';
+    
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} phút trước`;
+    
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} giờ trước`;
+    
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} ngày trước`;
+    
+    const months = ['thg 1', 'thg 2', 'thg 3', 'thg 4', 'thg 5', 'thg 6', 'thg 7', 'thg 8', 'thg 9', 'thg 10', 'thg 11', 'thg 12'];
+    const currentYear = now.getFullYear();
+    const dateYear = date.getFullYear();
+    
+    if (currentYear === dateYear) {
+        return `${date.getDate()} ${months[date.getMonth()]}`;
+    } else {
+        return `${date.getDate()} ${months[date.getMonth()]} ${dateYear}`;
+    }
+}
+
+function formatPostTime(createdAt, updatedAt) {
+    const cDate = new Date(createdAt);
+    let timeStr = timeAgo(cDate);
+    
+    if (updatedAt) {
+        const uDate = new Date(updatedAt);
+        if (uDate.getTime() - cDate.getTime() > 60000) { // More than 1 minute diff
+            return `${timeStr} <span style="font-size: 0.9em; color: #888;">(đã chỉnh sửa)</span>`;
+        }
+    }
+    return timeStr;
+}
+
 function createPostCard(post) {
+    const userData = JSON.parse(localStorage.getItem('user_data')) || {};
+    const isOwnerOrAdmin = post.contributor === userData.id || userData.role_name === 'Admin';
+    
     const div = document.createElement('div');
     div.className = 'card post';
     div.id = `post-card-${post.post_id}`; // Unique ID for card
     div.innerHTML = `
         <div class="post-header">
-            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(post.author_name)}&background=random" alt="Author" class="avatar-medium">
+            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(post.author_name)}&background=random" alt="Author" class="avatar-medium" style="cursor:pointer;" onclick="window.location.href='profile.html?id=${post.contributor}'">
             <div class="post-meta">
-                <h4 class="author-name">${post.author_name} <span style="font-weight: 400; color: var(--text-secondary); font-size: 14px;">tại <strong style="color: var(--text-main);">${post.region_name}</strong></span></h4>
-                <span class="post-time">${new Date(post.created_at).toLocaleDateString('vi-VN')}</span>
+                <h4 class="author-name" style="cursor:pointer;" onclick="window.location.href='profile.html?id=${post.contributor}'">${post.author_name} <span style="font-weight: 400; color: var(--text-secondary); font-size: 14px;">tại <strong style="color: var(--text-main);">${post.region_name}${post.province ? ', ' + post.province : ''}</strong></span></h4>
+                <span class="post-time">${formatPostTime(post.created_at, post.updated_at)}</span>
             </div>
             <div class="post-options-container">
                 <div class="post-options" onclick="event.stopPropagation(); this.nextElementSibling.classList.toggle('show')">
@@ -412,6 +480,11 @@ function createPostCard(post) {
                     <a href="#" onclick="reportPost(${post.post_id})"><i class="fas fa-flag"></i> Báo cáo bài viết</a>
                     <div class="dropdown-divider"></div>
                     <a href="#" onclick="hidePost(${post.post_id})" style="color: #e53e3e;"><i class="fas fa-eye-slash"></i> Ẩn bài viết</a>
+                    ${isOwnerOrAdmin ? `
+                        <div class="dropdown-divider"></div>
+                        <a href="#" onclick="editPost(${post.post_id})" style="color: #007bff; font-weight: 600;"><i class="fas fa-edit"></i> Chỉnh sửa bài viết</a>
+                        <a href="#" onclick="deletePost(${post.post_id})" style="color: #e53e3e; font-weight: 600;"><i class="fas fa-trash-alt"></i> Xóa bài viết</a>
+                    ` : ''}
                 </div>
             </div>
         </div>
@@ -591,10 +664,11 @@ async function togglePostSection(postId, type) {
         loadRatingsList(postId);
         loadUserRating(postId);
     } else if (type === 'comments') {
+        const userData = JSON.parse(localStorage.getItem('user_data')) || { full_name: 'Me', username: 'me' };
         expansion.innerHTML = `
             <div class="expansion-title"><i class="fas fa-comment-alt"></i> Thảo luận món ăn</div>
             <div class="comment-input-row" style="display:flex; gap:12px; margin-bottom:25px;">
-                <img src="https://ui-avatars.com/api/?name=Me&background=f7630c&color=fff" style="width:36px; height:36px; border-radius:50%;">
+                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(userData.full_name || userData.username)}&background=f7630c&color=fff" style="width:36px; height:36px; border-radius:50%;">
                 <div style="flex:1;">
                     <textarea id="comment-input-${postId}" class="modern-comment-input" placeholder="Viết phản hồi của bạn..."></textarea>
                     <div style="display:flex; justify-content:flex-end; margin-top:10px;">
@@ -827,6 +901,36 @@ async function editComment(commentId, postId, oldContent) {
 }
 window.deleteComment = deleteComment;
 
+function switchDetailTab(tab) {
+    const ratingSec = document.getElementById('detail-rating-section');
+    const commentSec = document.getElementById('detail-comment-section');
+    const ratingBtn = document.getElementById('tab-btn-rating');
+    const commentBtn = document.getElementById('tab-btn-comment');
+
+    if (!ratingSec || !commentSec || !ratingBtn || !commentBtn) return;
+
+    if (tab === 'rating') {
+        ratingSec.style.display = 'block';
+        commentSec.style.display = 'none';
+        ratingBtn.classList.add('active');
+        ratingBtn.style.backgroundColor = '#fce4ec';
+        ratingBtn.style.color = 'var(--primary-color)';
+        commentBtn.classList.remove('active');
+        commentBtn.style.backgroundColor = 'transparent';
+        commentBtn.style.color = '#666';
+    } else {
+        ratingSec.style.display = 'none';
+        commentSec.style.display = 'block';
+        commentBtn.classList.add('active');
+        commentBtn.style.backgroundColor = '#fce4ec';
+        commentBtn.style.color = 'var(--primary-color)';
+        ratingBtn.classList.remove('active');
+        ratingBtn.style.backgroundColor = 'transparent';
+        ratingBtn.style.color = '#666';
+    }
+}
+window.switchDetailTab = switchDetailTab;
+
 async function loadPostDetail(id) {
     const container = document.getElementById('post-detail-container');
     if (!container) return;
@@ -834,86 +938,306 @@ async function loadPostDetail(id) {
         const post = await apiFetch(`/posts/${id}/`);
         if (!post) return;
         
+        const userData = JSON.parse(localStorage.getItem('user_data')) || { full_name: 'Me', username: 'me' };
+
         container.innerHTML = `
             <div class="card detail-card" style="padding:0;">
                 <img src="${post.thumbnail || 'https://picsum.photos/seed/food/800/600'}" style="width:100%; height:400px; object-fit:cover;">
                 <div style="padding:24px;">
-                    <h1>${post.title}</h1>
-                    <p style="color: grey; margin-bottom: 20px;">${post.region_name} · ${new Date(post.created_at).toLocaleDateString('vi-VN')}</p>
+                    <h1 style="margin-bottom: 10px;">${post.title}</h1>
+                    <p style="color: grey; margin-bottom: 25px;">${post.region_name}${post.province ? ', ' + post.province : ''} · ${formatPostTime(post.created_at, post.updated_at)}</p>
                     
-                    <h3>Giới thiệu</h3>
-                    <p>${post.content}</p>
+                    <h3 class="section-title"><i class="fas fa-info-circle"></i> Giới thiệu</h3>
+                    <p style="white-space: pre-wrap; line-height: 1.7; color: #444; margin-bottom: 25px;">${post.content}</p>
                     
-                    <h3 style="margin-top:20px;">Nguyên liệu</h3>
-                    <p>${post.ingredients}</p>
+                    <h3 class="section-title"><i class="fas fa-leaf"></i> Nguyên liệu</h3>
+                    <p style="white-space: pre-wrap; line-height: 1.7; color: #444; margin-bottom: 25px;">${post.ingredients || 'Đang cập nhật...'}</p>
                     
-                    <h3 style="margin-top:20px;">Cách thực hiện</h3>
-                    <p>${post.recipe}</p>
+                    <h3 class="section-title"><i class="fas fa-utensils"></i> Cách thực hiện</h3>
+                    <p style="white-space: pre-wrap; line-height: 1.7; color: #444; margin-bottom: 25px;">${post.recipe || 'Đang cập nhật...'}</p>
                 </div>
-                <div style="padding:24px; border-top:1px solid #eee;">
-                    <h3 style="margin-top:20px;">Bình luận</h3>
-                    <div id="comments-list-${id}"></div>
+
+                <!-- Interaction Tabs -->
+                <div style="padding:15px 24px; border-top:1px solid #eee; display:flex; gap:15px; background-color: #fcfcfc;">
+                    <button class="tab-btn active" id="tab-btn-rating" onclick="switchDetailTab('rating')" style="padding: 10px 20px; border: none; background: #fce4ec; color: var(--primary-color); cursor: pointer; font-weight: 700; border-radius: 12px; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fas fa-star"></i> Đánh giá
+                    </button>
+                    <button class="tab-btn" id="tab-btn-comment" onclick="switchDetailTab('comment')" style="padding: 10px 20px; border: none; background: transparent; color: #666; cursor: pointer; font-weight: 700; border-radius: 12px; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fas fa-comment"></i> Bình luận
+                    </button>
+                </div>
+
+                <!-- Rating Section -->
+                <div id="detail-rating-section" style="padding:24px; border-top:1px solid #eee; background-color: #fff;">
+                    <h3 class="section-title" style="margin-top:0;"><i class="fas fa-star-half-alt"></i> Đánh giá từ cộng đồng</h3>
+                    <div class="mini-rating-form" style="margin-bottom: 25px; border: 1px solid #eee; padding: 20px; border-radius: 15px; background: #fafafa;">
+                        <div style="font-weight:600; font-size:14px; margin-bottom:12px; color:var(--text-main);">Chia sẻ cảm nhận của bạn:</div>
+                        <div class="star-rating" id="star-rating-${post.post_id}" onmouseout="resetStars(${post.post_id})">
+                            ${[1,2,3,4,5].map(n => `<i class="far fa-star star" data-val="${n}" onclick="setRating(${post.post_id}, ${n})" onmouseover="highlightStars(${post.post_id}, ${n})"></i>`).join('')}
+                        </div>
+                        <textarea id="rating-comment-${post.post_id}" placeholder="Hương vị thế nào? Bạn có lời khuyên gì không..." style="width:100%; min-height:80px; padding:12px; border:1px solid #eee; border-radius:12px; margin-top:10px; font-family: inherit; resize: vertical;"></textarea>
+                        <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+                            <button class="btn-submit-rating" onclick="submitRating(${post.post_id})" style="background:var(--primary-color); color:white; border:none; padding:10px 25px; border-radius:25px; cursor:pointer; font-weight:700; box-shadow: 0 4px 10px rgba(247, 99, 12, 0.3);">
+                                <i class="fas fa-paper-plane"></i> Gửi đánh giá
+                            </button>
+                        </div>
+                    </div>
+                    <div id="ratings-list-${post.post_id}"></div>
+                </div>
+
+                <!-- Comment Section -->
+                <div id="detail-comment-section" style="padding:24px; border-top:1px solid #eee; display: none;">
+                    <h3 class="section-title" style="margin-top:0;"><i class="fas fa-comment-dots"></i> Thảo luận món ăn</h3>
+                    
+                    <div class="comment-input-row" style="display:flex; gap:15px; margin-bottom:30px;">
+                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(userData.full_name || userData.username)}&background=f7630c&color=fff" style="width:40px; height:40px; border-radius:50%;">
+                        <div style="flex:1;">
+                            <textarea id="comment-input-${post.post_id}" class="modern-comment-input" placeholder="Viết phản hồi của bạn..." style="width:100%; min-height:70px; padding:15px; border:1px solid #eee; border-radius:15px; font-family: inherit; background:#fafafa;"></textarea>
+                            <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+                                <button class="btn-submit-comment" onclick="submitComment(${post.post_id})" style="background:var(--primary-color); color:white; border:none; padding:10px 25px; border-radius:25px; cursor:pointer; font-weight:700; box-shadow: 0 4px 10px rgba(247, 99, 12, 0.3);">
+                                    <i class="fas fa-comment-dots"></i> Bình luận
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="comments-list-${post.post_id}"></div>
                 </div>
             </div>
         `;
-        loadComments(id);
+
+        // Update Sidebar Author Info
+        const authorNameEl = document.getElementById('author-name');
+        const authorAvatarEl = document.getElementById('author-avatar');
+        const followBtn = document.querySelector('.sidebar-right .btn-view-recipe');
+
+        if (authorNameEl) {
+            authorNameEl.innerText = post.author_name;
+            authorNameEl.style.cursor = 'pointer';
+            authorNameEl.onclick = () => window.location.href = `profile.html?id=${post.contributor}`;
+        }
+        if (authorAvatarEl) {
+            authorAvatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author_name)}&background=random&size=100`;
+            authorAvatarEl.style.cursor = 'pointer';
+            authorAvatarEl.onclick = () => window.location.href = `profile.html?id=${post.contributor}`;
+        }
+        
+        if (followBtn) {
+            checkFollowStatus(post.contributor, followBtn);
+            followBtn.onclick = () => toggleFollow(post.contributor, followBtn);
+        }
+
+        // Initialize lists
+        loadComments(post.post_id);
+        loadRatingsList(post.post_id);
+        loadUserRating(post.post_id);
+
     } catch (e) {
-        container.innerHTML = '<p>Lỗi tải dữ liệu.</p>';
+        container.innerHTML = `<p style="padding:40px; text-align:center; color:red;">Lỗi tải dữ liệu bài viết: ${e.message}</p>`;
     }
 }
 window.loadPostDetail = loadPostDetail;
 
 async function initCreatePostPage() {
     const form = document.getElementById('create-post-form');
-    const regionSelect = document.getElementById('region');
-    if (regionSelect) {
-        const regions = await apiFetch('/regions/');
-        if (regions) regions.forEach(r => {
+    if (!form) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
+    const titleHeader = document.querySelector('.form-container h1');
+    const submitBtn = form.querySelector('.btn-submit');
+
+    // Province data by region name
+    const provincesByRegion = {
+        'Miền Bắc': [
+            'Hà Nội', 'Hải Phòng', 'Quảng Ninh', 'Bắc Ninh', 'Bắc Giang',
+            'Hà Giang', 'Cao Bằng', 'Lạng Sơn', 'Tuyên Quang', 'Thái Nguyên',
+            'Phú Thọ', 'Yên Bái', 'Lào Cai', 'Điện Biên', 'Lai Châu',
+            'Sơn La', 'Hòa Bình', 'Hải Dương', 'Hưng Yên', 'Nam Định',
+            'Thái Bình', 'Hà Nam', 'Ninh Bình', 'Vĩnh Phúc', 'Bắc Kạn'
+        ],
+        'Miền Trung': [
+            'Đà Nẵng', 'Huế (Thừa Thiên Huế)', 'Quảng Trị', 'Quảng Bình',
+            'Hà Tĩnh', 'Nghệ An', 'Thanh Hóa', 'Quảng Nam', 'Quảng Ngãi',
+            'Bình Định', 'Phú Yên', 'Khánh Hòa', 'Ninh Thuận', 'Bình Thuận',
+            'Kon Tum', 'Gia Lai', 'Đắk Lắk', 'Đắk Nông', 'Lâm Đồng'
+        ],
+        'Miền Nam': [
+            'Thành phố Hồ Chí Minh', 'Cần Thơ', 'Bình Dương', 'Đồng Nai',
+            'Bà Rịa - Vũng Tàu', 'Long An', 'Tiền Giang', 'Bến Tre',
+            'Trà Vinh', 'Vĩnh Long', 'Đồng Tháp', 'An Giang', 'Kiên Giang',
+            'Hậu Giang', 'Sóc Trăng', 'Bạc Liêu', 'Cà Mau', 'Tây Ninh',
+            'Bình Phước', 'Bình Thuận'
+        ]
+    };
+
+    function updateProvinces(regionName) {
+        const provinceSelect = document.getElementById('province');
+        if (!provinceSelect) return;
+        provinceSelect.innerHTML = '<option value="">-- Để trống --</option>';
+        const provinces = provincesByRegion[regionName] || [];
+        provinces.forEach(p => {
             const opt = document.createElement('option');
-            opt.value = r.region_id;
-            opt.innerText = r.region_name;
-            regionSelect.appendChild(opt);
+            opt.value = p;
+            opt.innerText = p;
+            provinceSelect.appendChild(opt);
         });
     }
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const postData = {
-                title: form.querySelector('#title').value,
-                content: form.querySelector('#content').value,
-                ingredients: form.querySelector('#ingredients').value,
-                recipe: form.querySelector('#recipe').value,
-                thumbnail: form.querySelector('#thumbnail').value,
-                region: form.querySelector('#region').value,
-                status: 'Active' 
-            };
-            try {
-                const result = await apiFetch('/posts/', { method: 'POST', body: JSON.stringify(postData) });
-                if (result) { alert('Đăng bài thành công!'); window.location.href = 'index.html'; }
-            } catch (err) { alert('Lỗi: ' + err.message); }
-        });
+
+    // Load Regions
+    try {
+        const regions = await apiFetch('/regions/');
+        const regionSelect = document.getElementById('region');
+        if (regionSelect && regions) {
+            regions.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.region_id;
+                opt.innerText = r.region_name;
+                opt.dataset.name = r.region_name;
+                regionSelect.appendChild(opt);
+            });
+
+            // Wire up region → province filtering
+            regionSelect.addEventListener('change', () => {
+                const selected = regionSelect.options[regionSelect.selectedIndex];
+                updateProvinces(selected?.dataset.name || selected?.innerText || '');
+            });
+        }
+    } catch (e) {}
+
+    // Edit Mode Check
+    if (editId) {
+        if (titleHeader) titleHeader.innerText = 'Chỉnh sửa bài viết';
+        if (submitBtn) submitBtn.innerHTML = 'Cập nhật bài viết <i class="fas fa-save" style="margin-left: 8px;"></i>';
+        
+        try {
+            const post = await apiFetch(`/posts/${editId}/`);
+            if (post) {
+                form.querySelector('#title').value = post.title;
+                form.querySelector('#region').value = post.region;
+                if (form.querySelector('#province')) {
+                    form.querySelector('#region').dispatchEvent(new Event('change'));
+                    form.querySelector('#province').value = post.province || '';
+                }
+                form.querySelector('#thumbnail').value = post.thumbnail;
+                form.querySelector('#content').value = post.content || '';
+                form.querySelector('#ingredients').value = post.ingredients || '';
+                form.querySelector('#recipe').value = post.recipe || '';
+                
+                // Trigger preview event if it exists (for the image preview script in dangbai.html)
+                const thumbInput = form.querySelector('#thumbnail');
+                if (thumbInput) {
+                    thumbInput.dispatchEvent(new Event('input'));
+                }
+            }
+        } catch (e) {
+            alert('Lỗi tải dữ liệu bài viết: ' + e.message);
+        }
     }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('submit-status');
+        if (status) {
+            status.style.display = 'block';
+            status.textContent = 'Đang xử lý...';
+        }
+
+        const province = form.querySelector('#province')?.value || '';
+        const baseTitle = form.querySelector('#title').value;
+
+        const postData = {
+            title: baseTitle,
+            region: form.querySelector('#region').value,
+            province: province,
+            thumbnail: form.querySelector('#thumbnail').value,
+            content: form.querySelector('#content').value,
+            ingredients: form.querySelector('#ingredients').value,
+            recipe: form.querySelector('#recipe').value,
+            status: 'Active'
+        };
+
+        try {
+            let result;
+            if (editId) {
+                result = await apiFetch(`/posts/${editId}/`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(postData)
+                });
+            } else {
+                result = await apiFetch('/posts/', {
+                    method: 'POST',
+                    body: JSON.stringify(postData)
+                });
+            }
+
+            if (result) {
+                if (status) {
+                    status.style.color = 'green';
+                    status.textContent = editId ? 'Cập nhật thành công!' : 'Đăng bài thành công!';
+                } else {
+                    alert(editId ? 'Cập nhật bài viết thành công!' : 'Đăng bài viết thành công!');
+                }
+                setTimeout(() => window.location.href = 'index.html', 1500);
+            }
+        } catch (err) {
+            if (status) {
+                status.style.color = 'red';
+                status.textContent = 'Thao tác thất bại: ' + err.message;
+            } else {
+                alert('Thao tác thất bại: ' + err.message);
+            }
+        }
+    });
+}
+
+let currentSearchRegion = 'Tất cả';
+
+window.applyFilter = function(regionName, element) {
+    if (element) {
+        document.querySelectorAll('.sidebar-menu .menu-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
+    currentSearchRegion = regionName;
+    const query = new URLSearchParams(window.location.search).get('q') || '';
+    performSearch(query);
 }
 
 async function performSearch(query) {
     const list = document.getElementById('results-list');
     const countEl = document.getElementById('search-count');
     if (!list) return;
+
+    // Normalize text: remove diacritics and lowercase for accent-insensitive matching
+    function normalize(str) {
+        return (str || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\u0111/g, 'd').replace(/\u0110/g, 'd'); // đ/Đ
+    }
+
+    const q = normalize(query);
+
     try {
         const posts = await apiFetch('/posts/?status=Active');
-        const filtered = posts.filter(p => 
-            p.title.toLowerCase().includes(query.toLowerCase()) || 
-            (p.content && p.content.toLowerCase().includes(query.toLowerCase())) ||
-            (p.region_name && p.region_name.toLowerCase().includes(query.toLowerCase()))
-        );
+        const filtered = posts.filter(p => {
+            const matchQuery = normalize(p.title).includes(q) ||
+                normalize(p.content).includes(q) ||
+                normalize(p.region_name).includes(q) ||
+                normalize(p.ingredients).includes(q);
+                
+            const matchRegion = (currentSearchRegion === 'Tất cả') || (p.region_name === currentSearchRegion);
+            return matchQuery && matchRegion;
+        });
         document.getElementById('loading-results')?.remove();
         list.innerHTML = '';
         if (filtered.length > 0) {
             if (countEl) countEl.innerText = `Tìm thấy ${filtered.length} kết quả cho "${query}"`;
             filtered.forEach(p => list.appendChild(createPostCard(p)));
-        } else { 
+        } else {
             const noResults = document.getElementById('no-results');
-            if (noResults) noResults.style.display = 'block'; 
+            if (noResults) noResults.style.display = 'block';
             if (countEl) countEl.innerText = `Không tìm thấy kết quả nào cho "${query}"`;
         }
     } catch (e) {
@@ -1391,11 +1715,10 @@ async function loadAdminRegionDishes(regionId, regionName) {
 }
 
 async function showPostModal(postId = null, regionId, regionName) {
-    let post = { title: '', content: '', thumbnail: '' };
+    let post = { title: '', content: '', thumbnail: '', ingredients: '', recipe: '' };
     if (postId) {
         try {
-            const posts = await apiFetch('/posts/');
-            post = posts.find(p => p.post_id === postId) || post;
+            post = await apiFetch(`/posts/${postId}/`);
         } catch (e) { console.error('Lỗi tải chi tiết món ăn'); }
     }
 
@@ -1409,18 +1732,33 @@ async function showPostModal(postId = null, regionId, regionName) {
                 <i class="fas fa-times modal-close" onclick="closeAdminModal()"></i>
             </div>
             <form id="post-admin-form" onsubmit="saveAdminPost(event, ${regionId}, ${postId})">
-                <div class="settings-group">
-                    <label>Tên món ăn</label>
-                    <input type="text" id="m-title" class="settings-input" required value="${post.title}" placeholder="Nhập tên món ăn đặc sắc...">
+                <div class="settings-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="settings-group">
+                        <label>Tên món ăn</label>
+                        <input type="text" id="m-title" class="settings-input" required value="${post.title}" placeholder="Nhập tên món ăn đặc sắc...">
+                    </div>
+                    <div class="settings-group">
+                        <label>Hình ảnh (URL)</label>
+                        <input type="text" id="m-thumbnail" class="settings-input" required value="${post.thumbnail}" placeholder="https://example.com/image.jpg">
+                    </div>
                 </div>
+
                 <div class="settings-group">
-                    <label>Hình ảnh (URL)</label>
-                    <input type="text" id="m-thumbnail" class="settings-input" required value="${post.thumbnail}" placeholder="https://example.com/image.jpg">
+                    <label>Giới thiệu ngắn gọn / Câu chuyện văn hóa</label>
+                    <textarea id="m-content" class="settings-input" required style="height:80px; resize:vertical; line-height:1.6;" placeholder="Chia sẻ nguồn gốc hoặc ý nghĩa của món ăn này...">${post.content || ''}</textarea>
                 </div>
-                <div class="settings-group">
-                    <label>Mô tả / Công thức nấu ăn</label>
-                    <textarea id="m-content" class="settings-input" required style="height:150px; resize:vertical; line-height:1.6;" placeholder="Chia sẻ bí quyết nấu món ăn này...">${post.content}</textarea>
+
+                <div class="settings-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="settings-group">
+                        <label>Nguyên liệu cần chuẩn bị</label>
+                        <textarea id="m-ingredients" class="settings-input" required style="height:120px; resize:vertical; line-height:1.6;" placeholder="Mỗi nguyên liệu một dòng...">${post.ingredients || ''}</textarea>
+                    </div>
+                    <div class="settings-group">
+                        <label>Các bước thực hiện</label>
+                        <textarea id="m-recipe" class="settings-input" required style="height:120px; resize:vertical; line-height:1.6;" placeholder="Bước 1: ...&#10;Bước 2: ...">${post.recipe || ''}</textarea>
+                    </div>
                 </div>
+
                 <div class="settings-group">
                     <label>Vùng miền</label>
                     <input type="text" class="settings-input" disabled value="${regionName}">
@@ -1440,13 +1778,15 @@ async function saveAdminPost(e, regionId, postId) {
     const title = document.getElementById('m-title').value;
     const thumbnail = document.getElementById('m-thumbnail').value;
     const content = document.getElementById('m-content').value;
+    const ingredients = document.getElementById('m-ingredients').value;
+    const recipe = document.getElementById('m-recipe').value;
 
-    // 'region' is the ForeignKey field name in Django model (not region_id)
-    // 'contributor' is set automatically by perform_create via request.user
     const payload = { 
         title, 
         thumbnail, 
         content, 
+        ingredients,
+        recipe,
         region: regionId,
         status: 'Active'
     };
@@ -1527,10 +1867,10 @@ async function loadAdminReports() {
                             ${reports.map(r => `
                                 <tr>
                                     <td>
-                                        <a href="chitiet.html?id=${r.post}" target="_blank" style="font-weight:700; color:var(--primary-color);">#${r.post}</a>
+                                        <a href="chitiet.html?id=${r.post}" target="_blank" style="font-weight:700; color:var(--primary-color); text-decoration:none;">${r.post_title || 'Bài viết #' + r.post}</a>
                                     </td>
                                     <td>${r.user_name || 'Người dùng'}</td>
-                                    <td><div style="max-width:200px; font-size:13px; color:#666;">${r.reason}</div></td>
+                                    <td><div style="max-width:200px; font-size:13px; color:#666; line-height: 1.4;">${r.reason}</div></td>
                                     <td>${new Date(r.created_at).toLocaleDateString('vi-VN')}</td>
                                     <td><span class="badge ${r.process_status === 'Pending' ? 'badge-pending' : 'badge-active'}">${r.process_status}</span></td>
                                     <td class="admin-actions">
@@ -1637,24 +1977,244 @@ async function initRegionPage() {
 }
 
 async function initProfilePage() {
+    console.log('Initializing profile page...');
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('id');
+    const currentUser = JSON.parse(localStorage.getItem('user_data'));
+    
     try {
-        const user = await apiFetch('/auth/me/');
+        let user;
+        if (userId && (!currentUser || userId != currentUser.id)) {
+            user = await apiFetch(`/users/${userId}/profile/`);
+        } else {
+            user = await apiFetch('/auth/me/');
+        }
+
         if (user) {
             document.getElementById('profile-name').innerText = user.full_name || user.username;
             document.getElementById('profile-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || user.username)}&background=f7630c&color=fff&size=200`;
             document.getElementById('profile-join-date').innerText = `Tham gia từ ${new Date(user.date_joined || Date.now()).toLocaleDateString('vi-VN')}`;
+            
+            // Stats
+            document.getElementById('profile-post-count').innerText = user.post_count || 0;
+            document.getElementById('profile-follower-count').innerText = user.follower_count || 0;
+            document.getElementById('profile-following-count').innerText = user.following_count || 0;
+
+            // Extra Info
+            const passionEl = document.getElementById('profile-passion');
+            const locationEl = document.getElementById('profile-location');
+            if (passionEl) passionEl.innerText = user.passion || 'Đam mê nấu ăn';
+            if (locationEl) locationEl.innerText = user.location || 'Sống tại Hà Nội, Việt Nam';
+
+            // Buttons
+            const editBtn = document.getElementById('edit-profile-btn');
+            const followBtn = document.getElementById('follow-btn');
+            const createPostBox = document.querySelector('.create-post');
+            
+            const isMyProfile = !userId || (currentUser && userId == currentUser.id);
+
+            if (isMyProfile) {
+                if (editBtn) editBtn.style.display = 'block';
+                if (followBtn) followBtn.style.display = 'none';
+                if (createPostBox) createPostBox.style.display = 'block';
+                
+                // Attach edit listener
+                if (editBtn) {
+                    editBtn.onclick = () => {
+                        console.log('Redirecting to settings...');
+                        window.location.href = 'settings.html';
+                    };
+                }
+            } else {
+                if (editBtn) editBtn.style.display = 'none';
+                if (followBtn) {
+                    followBtn.style.display = 'block';
+                    checkFollowStatus(user.id, followBtn);
+                    followBtn.onclick = () => toggleFollow(user.id, followBtn);
+                }
+                if (createPostBox) createPostBox.style.display = 'none';
+            }
+
+            // Create Post Input (Global logic check)
+            const mockInput = document.querySelector('.mock-input');
+            if (mockInput) {
+                mockInput.onclick = () => {
+                    console.log('Redirecting to create post...');
+                    window.location.href = 'dangbai.html';
+                };
+            }
+
+            // Posts
             const postsContainer = document.getElementById('profile-posts');
-            const posts = await apiFetch('/posts/');
-            const myPosts = posts.filter(p => p.author_username === user.username);
             if (postsContainer) {
+                postsContainer.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Đang tải bài viết...</div>';
+                const posts = await apiFetch('/posts/');
+                const userPosts = posts.filter(p => p.author_username === user.username);
                 postsContainer.innerHTML = '';
-                document.getElementById('profile-post-count').innerText = myPosts.length;
-                if (myPosts.length > 0) myPosts.forEach(p => postsContainer.appendChild(createPostCard(p)));
+                if (userPosts.length > 0) userPosts.forEach(p => postsContainer.appendChild(createPostCard(p)));
                 else postsContainer.innerHTML = '<div class="card" style="padding:40px; text-align:center;">Chưa có bài viết.</div>';
             }
+
+            // Load Followed Users
+            loadFollowedUsers();
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error('Profile Init Error:', e);
+        const container = document.getElementById('profile-posts');
+        if (container) container.innerHTML = `<div class="card" style="padding:40px; text-align:center; color:red;">Lỗi tải hồ sơ: ${e.message}</div>`;
+    }
 }
+
+async function loadFollowedUsers() {
+    const list = document.getElementById('followed-list');
+    if (!list) return;
+
+    try {
+        const users = await apiFetch('/followed-users/');
+        if (!users || users.length === 0) {
+            list.innerHTML = '<p style="font-size: 14px; color: #999;">Chưa theo dõi ai.</p>';
+            return;
+        }
+
+        list.innerHTML = users.map(u => `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer;" onclick="window.location.href='profile.html?id=${u.id}'">
+                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name)}&background=random" style="width: 32px; height: 32px; border-radius: 50%;">
+                <span style="font-size: 14px; font-weight: 500;">${u.full_name}</span>
+            </div>
+        `).join('');
+    } catch (e) {
+        list.innerHTML = '<p style="font-size: 12px; color: red;">Lỗi tải danh sách.</p>';
+    }
+}
+
+async function initSavedPage() {
+    const container = document.getElementById('saved-posts-container');
+    if (!container) return;
+
+    // Wire up filter buttons
+    const filterBtns = document.querySelectorAll('.filters .btn-view-recipe');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => {
+                b.style.backgroundColor = '#f1f1f1';
+                b.style.color = '#333';
+            });
+            btn.style.backgroundColor = 'var(--primary-color)';
+            btn.style.color = 'white';
+        });
+    });
+
+    try {
+        const favorites = await apiFetch('/favorites/');
+        container.innerHTML = '';
+        if (!favorites || favorites.length === 0) {
+            container.innerHTML = '<div style="grid-column: span 2; padding: 40px; text-align: center; color: #666;"><i class="fas fa-bookmark fa-3x" style="color:#eee; margin-bottom:15px;"></i><p>Bạn chưa lưu món ăn nào.</p></div>';
+            return;
+        }
+
+        favorites.forEach(fav => {
+            if (fav.post_details) {
+                container.appendChild(createPostCard(fav.post_details));
+            }
+        });
+    } catch (e) {
+        container.innerHTML = `<p style="color:red; padding:20px;">Lỗi tải danh sách đã lưu: ${e.message}</p>`;
+    }
+}
+
+async function initTrendingPage() {
+    // The trending page uses 'trending-posts-container', not 'trending-list'
+    const list = document.getElementById('trending-posts-container') || document.getElementById('trending-list') || document.getElementById('post-list');
+    if (!list) return;
+
+    try {
+        const posts = await apiFetch('/posts/?status=Active');
+        if (!posts || posts.length === 0) {
+            list.innerHTML = '<div style="padding:40px; text-align:center; color:#999;">Chưa có bài viết nào.</div>';
+            return;
+        }
+        // Sort by most recent
+        const trending = posts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        list.innerHTML = '';
+        trending.forEach(p => list.appendChild(createPostCard(p)));
+    } catch (e) {
+        console.error('Trending load error', e);
+    }
+
+    // Wire up hashtag keyword chips
+    document.querySelectorAll('[data-hashtag], .hashtag-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const keyword = chip.dataset.hashtag || chip.textContent.replace('#', '').trim();
+            window.location.href = `timkiem.html?q=${encodeURIComponent(keyword)}`;
+        });
+    });
+}
+
+async function initNotificationsPage() {
+    const list = document.getElementById('notifications-list');
+    if (!list) return;
+
+    try {
+        const notifications = await apiFetch('/notifications/');
+        if (!notifications || notifications.length === 0) {
+            list.innerHTML = `
+                <div style="text-align:center; padding:50px; color:#999;">
+                    <i class="fas fa-bell-slash fa-3x" style="opacity:0.2; margin-bottom:15px;"></i>
+                    <p>Bạn chưa có thông báo nào.</p>
+                </div>`;
+            return;
+        }
+
+        list.innerHTML = notifications.map(n => {
+            let icon = 'fa-bell';
+            let color = 'var(--primary-color)';
+            let text = '';
+            
+            if (n.action_type === 'new_post') {
+                icon = 'fa-utensils';
+                color = 'var(--primary-color)';
+                text = `<strong>${n.actor_name}</strong> đã đăng một món ăn mới: <strong>${n.post_title}</strong>`;
+            } else if (n.action_type === 'like') {
+                icon = 'fa-thumbs-up';
+                color = '#007bff';
+                text = `<strong>${n.actor_name}</strong> đã thích bài viết của bạn.`;
+            } else if (n.action_type === 'comment') {
+                icon = 'fa-comment';
+                color = '#28a745';
+                text = `<strong>${n.actor_name}</strong> đã bình luận về bài viết của bạn.`;
+            }
+
+            return `
+                <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="handleNotifClick(${n.notification_id}, ${n.post})">
+                    <div class="notif-icon-circle" style="background-color: ${color};"><i class="fas ${icon}"></i></div>
+                    <div class="notif-info">
+                        <p>${text}</p>
+                        <span class="notif-time">${new Date(n.created_at).toLocaleString('vi-VN')}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Notifications Load Error:', e);
+    }
+}
+
+async function handleNotifClick(notifId, postId) {
+    try {
+        // Mark as read
+        await apiFetch(`/notifications/${notifId}/`, {
+            method: 'PATCH',
+            body: JSON.stringify({ is_read: true })
+        });
+        // Navigate to post
+        if (postId) {
+            window.location.href = `chitiet.html?id=${postId}`;
+        }
+    } catch (e) {
+        if (postId) window.location.href = `chitiet.html?id=${postId}`;
+    }
+}
+window.handleNotifClick = handleNotifClick;
 
 async function initSavedPage() {
     const container = document.getElementById('saved-posts-container');
@@ -1672,6 +2232,40 @@ async function initTrendingPage() {
     if (!container) return;
     try {
         const posts = await apiFetch('/public/cuisine-data/');
+        
+        // --- Dynamic Hashtags Extraction ---
+        const hashtagContainer = document.getElementById('trending-keywords-container');
+        if (hashtagContainer) {
+            try {
+                const allPosts = await apiFetch('/posts/?status=Active');
+                const hashtagCounts = {};
+                const hashtagRegex = /#[\wÀ-ỹ]+/g;
+                
+                if (allPosts && allPosts.length > 0) {
+                    allPosts.forEach(p => {
+                        const textToSearch = (p.title + " " + (p.content || "")).replace(/<[^>]*>?/gm, '');
+                        let match;
+                        while ((match = hashtagRegex.exec(textToSearch)) !== null) {
+                            const tag = match[0];
+                            hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
+                        }
+                    });
+                    
+                    const sortedHashtags = Object.keys(hashtagCounts).sort((a, b) => hashtagCounts[b] - hashtagCounts[a]).slice(0, 8);
+                    
+                    if (sortedHashtags.length > 0) {
+                        hashtagContainer.innerHTML = sortedHashtags.map(tag => 
+                            `<span class="hashtag-chip" onclick="window.location.href='timkiem.html?q=${encodeURIComponent(tag.replace('#', ''))}'" style="padding: 8px 15px; background: #eee; border-radius: 20px; font-weight: 500; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--primary-color)';this.style.color='white'" onmouseout="this.style.background='#eee';this.style.color='#333'">${tag}</span>`
+                        ).join('');
+                    } else {
+                        hashtagContainer.innerHTML = '<div style="padding: 10px; color: grey; font-style: italic; font-size: 14px;">Chưa có từ khóa nào nổi bật.</div>';
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading hashtags", err);
+            }
+        }
+
         if (posts) {
             // Sort by average rating descending
             const trending = posts.sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0)).slice(0, 10);
@@ -1708,12 +2302,74 @@ async function toggleFavorite(postId) {
 }
 
 async function reportPost(postId) {
-    const reason = prompt('Lý do báo cáo bài viết này:');
-    if (!reason) return;
-    try {
-        await apiFetch('/reports/', { method: 'POST', body: JSON.stringify({ post: postId, reason }) });
-        alert('Cảm ơn bạn! Báo cáo đã được gửi tới quản trị viên.');
-    } catch(e) { alert('Lỗi gửi báo cáo.'); }
+    const existingModal = document.getElementById('report-modal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'report-modal';
+    modal.style = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+        z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div class="card" style="width: 90%; max-width: 400px; padding: 25px; border-radius: 12px; background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <h3 style="margin-bottom: 15px; color: var(--text-main);">Báo cáo bài viết</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Vui lòng chọn lý do báo cáo hoặc điền lý do của bạn:</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <input type="radio" name="report_reason" value="Spam / Quảng cáo trái phép"> Spam / Quảng cáo trái phép
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <input type="radio" name="report_reason" value="Nội dung phản cảm, không phù hợp"> Nội dung phản cảm, không phù hợp
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <input type="radio" name="report_reason" value="Sai thông tin món ăn / vùng miền"> Sai thông tin món ăn / vùng miền
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <input type="radio" name="report_reason" value="Vi phạm bản quyền hình ảnh / công thức"> Vi phạm bản quyền hình ảnh / công thức
+                </label>
+            </div>
+            
+            <input type="text" id="report-custom-reason" placeholder="Lý do khác (nếu có)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; margin-bottom: 20px; box-sizing: border-box;">
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="report-cancel-btn" style="padding: 8px 16px; border: none; background: #eee; border-radius: 8px; cursor: pointer; color: #333; font-weight: 500;">Hủy</button>
+                <button id="report-submit-btn" style="padding: 8px 16px; border: none; background: var(--primary-color); border-radius: 8px; cursor: pointer; color: white; font-weight: 500;">Gửi báo cáo</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('report-cancel-btn').addEventListener('click', () => modal.remove());
+    
+    document.getElementById('report-submit-btn').addEventListener('click', async () => {
+        const selectedRadio = document.querySelector('input[name="report_reason"]:checked');
+        const customReason = document.getElementById('report-custom-reason').value.trim();
+        
+        let finalReason = '';
+        if (selectedRadio) finalReason += selectedRadio.value;
+        if (customReason) finalReason += (finalReason ? ' - ' : '') + customReason;
+        
+        if (!finalReason) {
+            alert('Vui lòng chọn hoặc nhập lý do báo cáo.');
+            return;
+        }
+        
+        document.getElementById('report-submit-btn').innerText = 'Đang gửi...';
+        
+        try {
+            await apiFetch('/reports/', { method: 'POST', body: JSON.stringify({ post: postId, reason: finalReason }) });
+            alert('Cảm ơn bạn! Báo cáo đã được gửi tới quản trị viên.');
+            modal.remove();
+        } catch(e) { 
+            alert('Lỗi gửi báo cáo: ' + e.message); 
+            document.getElementById('report-submit-btn').innerText = 'Gửi báo cáo';
+        }
+    });
 }
 
 function hidePost(postId) {
@@ -1839,6 +2495,16 @@ async function renderAccountSettings(container) {
                         <label style="display: block; font-weight: 500; margin-bottom: 5px;">Tiểu sử (Slogan)</label>
                         <textarea id="settings-bio" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; resize: vertical;">${user.bio || ''}</textarea>
                     </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="display: block; font-weight: 500; margin-bottom: 5px;">Sở thích / Đam mê</label>
+                            <input type="text" id="settings-passion" value="${user.passion || ''}" placeholder="Vd: Đam mê nấu ăn" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 500; margin-bottom: 5px;">Nơi sống</label>
+                            <input type="text" id="settings-location" value="${user.location || ''}" placeholder="Vd: Hà Nội, Việt Nam" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                        </div>
+                    </div>
                     <div>
                         <label style="display: block; font-weight: 500; margin-bottom: 5px;">Trạng thái tài khoản</label>
                         <input type="text" id="settings-status" value="${user.status || 'Active'}" disabled style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #f9f9f9;">
@@ -1861,10 +2527,17 @@ async function renderAccountSettings(container) {
             e.preventDefault();
             const fullName = document.getElementById('settings-fullname').value;
             const bio = document.getElementById('settings-bio').value;
+            const passion = document.getElementById('settings-passion').value;
+            const location = document.getElementById('settings-location').value;
             try {
                 await apiFetch('/auth/me/', {
                     method: 'PATCH',
-                    body: JSON.stringify({ full_name: fullName, bio: bio })
+                    body: JSON.stringify({ 
+                        full_name: fullName, 
+                        bio: bio,
+                        passion: passion,
+                        location: location
+                    })
                 });
                 alert('Cập nhật thông tin thành công!');
                 updateUserUI();
@@ -1971,3 +2644,91 @@ function setTheme(theme) {
 }
 
 window.setTheme = setTheme;
+
+async function checkFollowStatus(userId, btn) {
+    try {
+        const follows = await apiFetch('/follows/');
+        const isFollowing = follows.some(f => f.followed === userId);
+        updateFollowBtn(btn, isFollowing);
+    } catch (e) {}
+}
+
+function updateFollowBtn(btn, isFollowing) {
+    if (isFollowing) {
+        btn.innerText = 'Đang theo dõi';
+        btn.style.backgroundColor = '#e2e8f0';
+        btn.style.color = '#4a5568';
+    } else {
+        btn.innerText = 'Theo dõi';
+        btn.style.backgroundColor = 'var(--primary-color)';
+        btn.style.color = 'white';
+    }
+    btn.dataset.following = isFollowing;
+}
+
+async function toggleFollow(userId, btn) {
+    const isFollowing = btn.dataset.following === 'true';
+    try {
+        if (isFollowing) {
+            const follows = await apiFetch('/follows/');
+            const followRecord = follows.find(f => f.followed === userId);
+            if (followRecord) {
+                await apiFetch(`/follows/${followRecord.id}/`, { method: 'DELETE' });
+            }
+        } else {
+            await apiFetch('/follows/', {
+                method: 'POST',
+                body: JSON.stringify({ followed: userId })
+            });
+        }
+        updateFollowBtn(btn, !isFollowing);
+        
+        // If we are on a profile page, refresh the stats and followed list
+        if (window.location.pathname.includes('profile.html')) {
+            loadFollowedUsers();
+            // Also update the following count on the current page if it's our profile
+            const currentUser = JSON.parse(localStorage.getItem('user_data'));
+            const urlParams = new URLSearchParams(window.location.search);
+            const userIdParam = urlParams.get('id');
+            if (!userIdParam || userIdParam == currentUser.id) {
+                const countEl = document.getElementById('profile-following-count');
+                if (countEl) {
+                    let count = parseInt(countEl.innerText) || 0;
+                    countEl.innerText = !isFollowing ? count + 1 : Math.max(0, count - 1);
+                }
+            } else {
+                // If we are on someone else's profile, update THEIR follower count
+                const countEl = document.getElementById('profile-follower-count');
+                if (countEl) {
+                    let count = parseInt(countEl.innerText) || 0;
+                    countEl.innerText = !isFollowing ? count + 1 : Math.max(0, count - 1);
+                }
+            }
+        }
+    } catch (e) {
+        alert('Thao tác thất bại: ' + e.message);
+    }
+}
+window.toggleFollow = toggleFollow;
+async function deletePost(postId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.')) return;
+
+    try {
+        await apiFetch(`/posts/${postId}/`, { method: 'DELETE' });
+        const card = document.getElementById(`post-card-${postId}`);
+        if (card) {
+            card.style.opacity = '0.5';
+            card.style.pointerEvents = 'none';
+            setTimeout(() => card.remove(), 500);
+        }
+        alert('Đã xóa bài viết thành công.');
+    } catch (err) {
+        alert('Lỗi khi xóa bài viết: ' + err.message);
+    }
+}
+window.deletePost = deletePost;
+
+function editPost(postId) {
+    window.location.href = `dangbai.html?edit=${postId}`;
+}
+window.editPost = editPost;

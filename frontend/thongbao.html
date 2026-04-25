@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,13 +19,16 @@
             background-color: var(--card-bg);
             color: var(--text-main);
         }
+
         .notif-item:hover {
             background-color: var(--hover-bg);
         }
+
         .notif-item.unread {
             background-color: var(--hover-bg);
             border-left: 4px solid var(--fb-blue);
         }
+
         .notif-icon-circle {
             width: 48px;
             height: 48px;
@@ -36,24 +40,29 @@
             color: white;
             font-size: 20px;
         }
+
         .notif-info p {
             font-size: 15px;
             margin-bottom: 4px;
             color: var(--text-main);
         }
+
         .notif-info p strong {
             color: var(--text-main);
         }
+
         .notif-time {
             font-size: 13px;
             color: var(--fb-blue);
             font-weight: 600;
         }
+
         h1 {
             color: var(--text-main);
         }
     </style>
 </head>
+
 <body>
     <header class="header">
         <div class="header-left">
@@ -86,48 +95,26 @@
     <main class="main-container">
         <aside class="sidebar-left">
             <ul class="sidebar-menu">
-                <li class="menu-item"><a href="index.html" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px;"><i class="fas fa-arrow-left"></i> <span>Quay lại trang chủ</span></a></li>
-                <li class="menu-item"><div class="menu-icon specialty"><i class="fas fa-star"></i></div> <span>Đặc sản vùng miền</span></li>
-                <li class="menu-item"><div class="menu-icon saved"><i class="fas fa-bookmark"></i></div> <span>Món đã lưu</span></li>
+                <li class="menu-item"><a href="index.html"
+                        style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px;"><i
+                            class="fas fa-arrow-left"></i> <span>Quay lại trang chủ</span></a></li>
             </ul>
         </aside>
 
         <section class="feed-container">
             <div class="card" style="padding: 0;">
-                <div style="padding: 20px 16px; border-bottom: 1px solid var(--divider-color); display: flex; justify-content: space-between; align-items: center;">
+                <div
+                    style="padding: 20px 16px; border-bottom: 1px solid var(--divider-color); display: flex; justify-content: space-between; align-items: center;">
                     <h1>Thông báo</h1>
-                    <span style="color: var(--fb-blue); font-weight: 600; cursor: pointer; font-size: 14px;">Đánh dấu tất cả là đã đọc</span>
+                    <span style="color: var(--fb-blue); font-weight: 600; cursor: pointer; font-size: 14px;">Đánh dấu
+                        tất cả là đã đọc</span>
                 </div>
-                
+
                 <div id="notifications-list">
-                    <!-- Notifications will be loaded here -->
-                    <div class="notif-item unread">
-                        <div class="notif-icon-circle" style="background-color: var(--fb-blue);"><i class="fas fa-thumbs-up"></i></div>
-                        <div class="notif-info">
-                            <p><strong>Ẩm Thực Tây Bắc</strong> và 24 người khác đã thích bài viết của bạn.</p>
-                            <span class="notif-time">2 phút trước</span>
-                        </div>
-                    </div>
-                    <div class="notif-item unread">
-                        <div class="notif-icon-circle" style="background-color: #45bd62;"><i class="fas fa-comment"></i></div>
-                        <div class="notif-info">
-                            <p><strong>Lan Anh</strong> đã bình luận: "Món này nhìn ngon quá, phải làm thử ngay!"</p>
-                            <span class="notif-time">15 phút trước</span>
-                        </div>
-                    </div>
-                    <div class="notif-item">
-                        <div class="notif-icon-circle" style="background-color: var(--primary-color);"><i class="fas fa-utensils"></i></div>
-                        <div class="notif-info">
-                            <p>Hệ thống vừa cập nhật <strong>12 món đặc sản Miền Tây</strong> mới. Khám phá ngay!</p>
-                            <span class="notif-time">1 giờ trước</span>
-                        </div>
-                    </div>
-                    <div class="notif-item">
-                        <div class="notif-icon-circle" style="background-color: #f1c40f;"><i class="fas fa-star"></i></div>
-                        <div class="notif-info">
-                            <p>Bài viết <strong>"Phở Thìn Hà Nội"</strong> của bạn đạt top xu hướng ngày hôm nay.</p>
-                            <span class="notif-time">5 giờ trước</span>
-                        </div>
+                    <!-- Notifications will be loaded here dynamically -->
+                    <div style="text-align:center; padding:50px; color:#999;">
+                        <i class="fas fa-bell-slash fa-3x" style="opacity:0.2; margin-bottom:15px;"></i>
+                        <p>Bạn chưa có thông báo nào.</p>
                     </div>
                 </div>
             </div>
@@ -170,4 +157,5 @@
     </nav>
     <script src="/static/script.js?v=2.9"></script>
 </body>
+
 </html>
