@@ -1251,7 +1251,11 @@ async function initAdminDashboard() {
     const viewTitle = document.getElementById('admin-view-title');
     const viewSubtitle = document.getElementById('admin-view-subtitle');
 
-    if (!menuItems.length || !contentArea) return;
+    if (!menuItems.length || !contentArea) {
+        console.error('Admin elements not found!', { menuItems: menuItems.length, contentArea });
+        return;
+    }
+    console.log('--- Admin Dashboard Initializing ---');
 
     // Load initial stats
     loadAdminOverview();
@@ -1271,11 +1275,7 @@ async function initAdminDashboard() {
                     viewSubtitle.innerText = "Hôm nay là một ngày tuyệt vời để khám phá ẩm thực.";
                     loadAdminOverview();
                     break;
-                case 'menu-posts':
-                    viewTitle.innerText = "Kiểm duyệt bài viết";
-                    viewSubtitle.innerText = "Xét duyệt các bài đăng mới từ cộng đồng.";
-                    loadAdminPosts();
-                    break;
+
                 case 'menu-users':
                     viewTitle.innerText = "Quản lý người dùng";
                     viewSubtitle.innerText = "Theo dõi và quản lý tài khoản thành viên.";
@@ -1321,7 +1321,7 @@ async function loadAdminOverview() {
                         <div class="value">${stats.total_users.toLocaleString()}</div>
                     </div>
                 </div>
-                <div class="stat-card green" style="cursor:pointer;" onclick="document.getElementById('menu-posts').click()">
+                <div class="stat-card green">
                     <div class="stat-icon green"><i class="fas fa-edit"></i></div>
                     <div class="stat-info">
                         <h3>Tổng bài đăng</h3>
@@ -1365,81 +1365,7 @@ async function loadAdminOverview() {
     }
 }
 
-async function loadAdminPosts() {
-    const contentArea = document.getElementById('admin-content-area');
-    try {
-        const posts = await apiFetch('/posts/?status=Pending');
-        
-        contentArea.innerHTML = `
-            <div class="admin-content-card">
-                <div class="admin-section-header">
-                    <h3><i class="fas fa-clipboard-check"></i> Kiểm duyệt bài viết</h3>
-                    <div class="badge badge-pending">${posts.length} bài đang chờ</div>
-                </div>
-                
-                ${posts.length === 0 ? `
-                    <div style="text-align:center; padding:60px; color:#999;">
-                        <i class="fas fa-check-circle fa-4x" style="color:#eee; margin-bottom:20px;"></i>
-                        <p>Tuyệt vời! Không có bài viết nào cần duyệt lúc này.</p>
-                    </div>
-                ` : `
-                    <div class="admin-table-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Ảnh</th>
-                                    <th>Nội dung bài viết</th>
-                                    <th>Thông tin tác giả</th>
-                                    <th>Ngày gửi</th>
-                                    <th>Thao tác nhanh</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${posts.map(post => `
-                                    <tr>
-                                        <td><img src="${post.thumbnail}" style="width:60px; height:60px; object-fit:cover; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.05);"></td>
-                                        <td>
-                                            <div style="font-weight:700; margin-bottom:4px; color:var(--text-main);">${post.title}</div>
-                                            <div style="font-size:12px; color:#888;"><i class="fas fa-map-marker-alt"></i> ${post.region_name}</div>
-                                        </td>
-                                        <td>
-                                            <div style="display:flex; align-items:center; gap:8px;">
-                                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(post.author_name)}&background=random" style="width:24px; height:24px; border-radius:50%;">
-                                                <span style="font-weight:600;">${post.author_name}</span>
-                                            </div>
-                                        </td>
-                                        <td style="color:#666;">${new Date(post.created_at).toLocaleDateString('vi-VN')}</td>
-                                        <td class="admin-actions">
-                                            <button class="btn-admin btn-approve" onclick="moderatePost(${post.post_id}, 'Active')">
-                                                <i class="fas fa-check"></i> Duyệt
-                                            </button>
-                                            <button class="btn-admin btn-reject" onclick="moderatePost(${post.post_id}, 'Rejected')">
-                                                <i class="fas fa-times"></i> Gỡ
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `}
-            </div>
-        `;
-    } catch (e) {
-        contentArea.innerHTML = '<p>Lỗi tải bài viết.</p>';
-    }
-}
 
-async function moderatePost(id, status) {
-    if (!confirm(`Bạn có chắc muốn ${status === 'Active' ? 'duyệt' : 'gỡ bỏ'} bài viết này?`)) return;
-    try {
-        await apiFetch(`/posts/${id}/`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status })
-        });
-        loadAdminPosts();
-    } catch (e) { alert('Thao tác thất bại.'); }
-}
 
 async function loadAdminUsers() {
     const contentArea = document.getElementById('admin-content-area');
@@ -1515,12 +1441,12 @@ async function loadAdminCategories() {
             <div class="admin-content-card">
                 <div class="admin-section-header">
                     <h3><i class="fas fa-tags"></i> Danh mục vùng miền</h3>
-                    <button class="btn-add" onclick="addNewRegion()"><i class="fas fa-plus"></i></button>
+                    <button class="btn-add" id="btn-add-region-prompt"><i class="fas fa-plus"></i></button>
                 </div>
 
                 <div class="quick-add-container">
                     <input type="text" id="new-region-name" class="quick-add-input" placeholder="Nhập tên danh mục/vùng miền mới (vd: Miền Tây)...">
-                    <button class="btn-add" style="padding: 10px 20px;" onclick="quickAddRegion()"><i class="fas fa-save"></i> Thêm</button>
+                    <button class="btn-add" style="padding: 10px 20px;" id="btn-quick-add-region"><i class="fas fa-save"></i> Thêm</button>
                 </div>
 
                 <div class="admin-table-container">
@@ -1536,7 +1462,7 @@ async function loadAdminCategories() {
                             ${regions.map(r => `
                                 <tr>
                                     <td style="color:#999; font-family:monospace;">#${r.region_id.toString().padStart(3, '0')}</td>
-                                    <td style="font-weight:700; color:var(--primary-color); cursor:pointer; text-decoration:underline;" onclick="loadAdminRegionDishes(${r.region_id}, '${r.region_name}')">
+                                    <td style="font-weight:700; color:var(--primary-color); cursor:pointer; text-decoration:underline;" class="region-link" data-id="${r.region_id}" data-name="${r.region_name}">
                                         <i class="fas fa-folder-open" style="margin-right:8px; opacity:0.5;"></i>
                                         ${r.region_name}
                                     </td>
@@ -1551,10 +1477,30 @@ async function loadAdminCategories() {
                 </div>
             </div>
         `;
-    } catch (e) {}
+
+        // Attach events
+        document.getElementById('btn-add-region-prompt')?.addEventListener('click', () => {
+            alert('Nút Thêm (+) đã được nhấn!');
+            addNewRegion();
+        });
+        document.getElementById('btn-quick-add-region')?.addEventListener('click', () => {
+            alert('Nút Thêm (Lưu) đã được nhấn!');
+            quickAddRegion();
+        });
+        document.querySelectorAll('.region-link').forEach(link => {
+            link.addEventListener('click', () => {
+                loadAdminRegionDishes(link.dataset.id, link.dataset.name);
+            });
+        });
+
+    } catch (e) {
+        console.error('Error in loadAdminCategories:', e);
+        if (contentArea) contentArea.innerHTML = `<p style="color:red; padding:20px;">Lỗi tải danh mục: ${e.message}</p>`;
+    }
 }
 
 async function quickAddRegion() {
+    console.log('--- Quick Add Region Triggered ---');
     const input = document.getElementById('new-region-name');
     const name = input.value?.trim();
     if (!name) return;
@@ -1566,6 +1512,7 @@ async function quickAddRegion() {
 }
 
 async function addNewRegion() {
+    console.log('--- Add New Region (Prompt) Triggered ---');
     const name = prompt('Nhập tên vùng miền mới:');
     if (!name) return;
     try {
@@ -2732,3 +2679,18 @@ function editPost(postId) {
     window.location.href = `dangbai.html?edit=${postId}`;
 }
 window.editPost = editPost;
+
+// Admin Function Exports
+window.addNewRegion = addNewRegion;
+window.quickAddRegion = quickAddRegion;
+window.editRegion = editRegion;
+window.deleteRegion = deleteRegion;
+window.toggleUserStatus = toggleUserStatus;
+window.loadAdminCategories = loadAdminCategories;
+window.loadAdminRegionDishes = loadAdminRegionDishes;
+window.showPostModal = showPostModal;
+window.saveAdminPost = saveAdminPost;
+window.deleteAdminPost = typeof deleteAdminPost !== 'undefined' ? deleteAdminPost : () => {};
+window.moderateReport = moderateReport;
+window.saveAdminSettings = typeof saveAdminSettings !== 'undefined' ? saveAdminSettings : () => {};
+

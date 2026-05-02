@@ -50,6 +50,26 @@ body {
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
+    overflow-y: auto;
+    min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--divider-color);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
 p, span, h1, h2, h3, h4, h5, h6, strong, em, li, b, i, a {
@@ -1049,8 +1069,9 @@ p, span, h1, h2, h3, h4, h5, h6, strong, em, li, b, i, a {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    padding: 20px;
+    overflow-y: auto;
 }
 
 .auth-container {
