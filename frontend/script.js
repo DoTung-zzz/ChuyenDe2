@@ -360,11 +360,12 @@ async function initLoginPage() {
                     body: JSON.stringify(registerData)
                 });
 
-                if (data && data.token) {
-                    alert('Đăng ký thành công!');
-                    localStorage.setItem('access_token', data.token);
-                    localStorage.setItem('user_data', JSON.stringify(data.user));
-                    window.location.href = 'index.html';
+                if (data) {
+                    alert('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
+                    document.getElementById('register-container').classList.add('hidden');
+                    document.getElementById('login-container').classList.remove('hidden');
+                    // Optional: pre-fill username
+                    document.getElementById('username').value = registerData.username;
                 }
             } catch (err) { alert('Đăng ký thất bại: ' + err.message); }
         });
