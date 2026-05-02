@@ -19,6 +19,8 @@ class User(AbstractUser):
     location = models.CharField(max_length=200, blank=True, null=True, default='Sống tại Hà Nội, Việt Nam')
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, default='Active')
+    notif_browser = models.BooleanField(default=True)
+    notif_email = models.BooleanField(default=False)
     
     # Resolving conflicts with default User model groups and user_permissions
     groups = models.ManyToManyField(
@@ -191,3 +193,15 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.recipient.username}: {self.action_type}"
+
+class SystemSetting(models.Model):
+    setting_id = models.AutoField(primary_key=True)
+    app_name = models.CharField(max_length=100, default='Ẩm Thực 3 Miền')
+    slogan = models.CharField(max_length=200, default='Nâng tầm văn hóa ẩm thực Việt')
+    facebook_page = models.CharField(max_length=200, default='https://facebook.com/cuisine3mien')
+    hotline = models.CharField(max_length=20, default='1900 1234')
+    maintenance_mode = models.BooleanField(default=False)
+    admin_email = models.EmailField(default='admin@cuisine.vn')
+
+    def __str__(self):
+        return f"System Settings"

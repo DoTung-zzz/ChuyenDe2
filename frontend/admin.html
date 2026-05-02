@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cuisine Admin - Quản lý ẩm thực 3 miền</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/style.css?v=3.4">
+    <link rel="stylesheet" href="/static/style.css?v=101">
 </head>
 <body class="admin-body">
     <div class="admin-container">
@@ -101,13 +101,10 @@
                             <h3>Xu hướng món ăn (7 ngày qua)</h3>
                         </div>
                         <div class="chart-placeholder">
-                            <div class="bar" style="height: 40%;" title="Phở"></div>
-                            <div class="bar alt" style="height: 60%;" title="Bánh mì"></div>
-                            <div class="bar" style="height: 80%;"></div>
-                            <div class="bar alt" style="height: 50%;"></div>
-                            <div class="bar" style="height: 90%;"></div>
-                            <div class="bar alt" style="height: 70%;"></div>
-                            <div class="bar" style="height: 100%;"></div>
+                            <!-- Placeholder bars for initial load -->
+                            <div class="bar-wrapper"><div class="bar" style="height: 60%; background: #f7630c;"></div><span class="bar-label">Đang tải...</span></div>
+                            <div class="bar-wrapper"><div class="bar" style="height: 45%; background: #1877f2;"></div><span class="bar-label">Đang tải...</span></div>
+                            <div class="bar-wrapper"><div class="bar" style="height: 75%; background: #42b72a;"></div><span class="bar-label">Đang tải...</span></div>
                         </div>
                     </div>
 
@@ -135,7 +132,7 @@
             <i class="fas fa-chart-line"></i>
             <span>Tổng quan</span>
         </a>
-        <a href="index.html" class="bottom-nav-item">
+        <a href="/" class="bottom-nav-item">
             <i class="fas fa-home"></i>
             <span>Trang chủ</span>
         </a>
@@ -144,6 +141,6 @@
             <span>Cài đặt</span>
         </a>
     </nav>
-    <script src="/static/script.js?v=7.0"></script>
+    <script src="/static/script.js?v=101"></script>
 </body>
 </html>

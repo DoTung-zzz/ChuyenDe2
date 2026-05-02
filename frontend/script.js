@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUserUI();
     initPage();
     setupSharedEvents();
+    applyGlobalSettings();
 });
 
 function applyTheme() {
@@ -143,6 +144,28 @@ async function updateUserUI() {
                 img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.full_name || userData.username)}&background=f7630c&color=fff`;
             });
 
+            // Update Notification Badge
+            try {
+                const notifications = await apiFetch('/notifications/');
+                const unreadCount = notifications.filter(n => !n.is_read).length;
+                const bellBtn = document.querySelector('.fa-bell')?.closest('.action-btn');
+                if (bellBtn) {
+                    let badge = bellBtn.querySelector('.notif-badge');
+                    if (unreadCount > 0) {
+                        if (!badge) {
+                            badge = document.createElement('span');
+                            badge.className = 'notif-badge';
+                            badge.style.cssText = "position:absolute; top:-5px; right:-5px; background:#e74c3c; color:white; font-size:10px; min-width:18px; height:18px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:2px solid white; font-weight:bold;";
+                            bellBtn.style.position = 'relative';
+                            bellBtn.appendChild(badge);
+                        }
+                        badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
+                    } else if (badge) {
+                        badge.remove();
+                    }
+                }
+            } catch (e) { console.log('Notif badge load error'); }
+
             const authorTitles = document.querySelectorAll('.author-name, #author-name, #profile-name');
             authorTitles.forEach(el => el.innerText = userData.full_name || userData.username);
 
@@ -199,6 +222,15 @@ async function updateUserUI() {
                     adminLink.innerHTML = '<i class="fas fa-chart-line"></i> Dashboard Quản trị';
                     adminLink.style.color = 'var(--primary-color)';
                     dropdown.prepend(adminLink);
+                }
+                // 5. Hide Danger Zone in settings.html for Admin
+                if (window.location.pathname.includes('settings.html')) {
+                    const cards = document.querySelectorAll('.card');
+                    cards.forEach(card => {
+                        if (card.querySelector('h3')?.innerText.includes('Vùng Nguy Hiểm')) {
+                            card.style.display = 'none';
+                        }
+                    });
                 }
             }
 
@@ -1341,9 +1373,22 @@ async function loadAdminOverview() {
                 <div class="chart-card">
                     <div class="card-header"><h3>Thống kê bài viết theo vùng miền</h3></div>
                     <div class="chart-placeholder">
-                        ${stats.trending_dishes ? stats.trending_dishes.slice(0, 5).map((d, i) => `
-                            <div class="bar ${i % 2 === 0 ? '' : 'alt'}" style="height: ${40 + (i * 10)}%" title="${d.title}"></div>
-                        `).join('') : '<div class="bar" style="height: 60%"></div>'}
+                        ${(() => {
+                            const colors = ['#f7630c', '#1877f2', '#42b72a', '#f7b731', '#9b59b6', '#1abc9c', '#e74c3c'];
+                            const rStats = stats.region_stats || [];
+                            const maxCount = Math.max(...rStats.map(r => r.post_count), 1);
+                            
+                            return rStats.map((r, i) => {
+                                const height = (r.post_count / maxCount) * 100;
+                                return `
+                                    <div class="bar-wrapper">
+                                        <div class="bar-value">${r.post_count}</div>
+                                        <div class="bar" style="height: ${Math.max(height, 5)}%; background: ${colors[i % colors.length]};" title="${r.region_name}: ${r.post_count} bài viết"></div>
+                                        <span class="bar-label">${r.region_name}</span>
+                                    </div>
+                                `;
+                            }).join('');
+                        })()}
                     </div>
                 </div>
                 <div class="top-dishes-card">
@@ -1406,10 +1451,14 @@ async function loadAdminUsers() {
                                     <td><span class="badge ${user.role_name === 'Admin' ? 'badge-admin' : 'badge-inactive'}">${user.role_name}</span></td>
                                     <td><span class="badge ${user.status === 'Active' ? 'badge-active' : 'badge-inactive'}">${user.status === 'Active' ? 'Hoạt động' : 'Đã khóa'}</span></td>
                                     <td class="admin-actions">
-                                        <button class="btn-admin btn-edit" title="${user.status === 'Active' ? 'Khóa tài khoản' : 'Mở khóa'}" onclick="toggleUserStatus(${user.id}, '${user.status}')">
-                                            <i class="fas ${user.status === 'Active' ? 'fa-lock' : 'fa-unlock-alt'}"></i>
-                                            ${user.status === 'Active' ? 'Khóa' : 'Mở'}
-                                        </button>
+                                        ${user.role_name === 'Admin' ? `
+                                            <span style="color:#999; font-size:12px; font-style:italic;"><i class="fas fa-shield-alt"></i> Bảo vệ hệ thống</span>
+                                        ` : `
+                                            <button class="btn-admin btn-edit" title="${user.status === 'Active' ? 'Khóa tài khoản' : 'Mở khóa'}" onclick="toggleUserStatus(${user.id}, '${user.status}')">
+                                                <i class="fas ${user.status === 'Active' ? 'fa-lock' : 'fa-unlock-alt'}"></i>
+                                                ${user.status === 'Active' ? 'Khóa' : 'Mở'}
+                                            </button>
+                                        `}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -1544,70 +1593,75 @@ async function deleteRegion(id) {
 
 async function loadAdminSettings() {
     const contentArea = document.getElementById('admin-content-area');
-    contentArea.innerHTML = `
-        <div class="admin-content-card">
-            <div class="admin-section-header">
-                <h3><i class="fas fa-universal-access"></i> Cấu hình hệ thống</h3>
-            </div>
-            
-            <div class="settings-grid">
-                <div class="settings-card">
-                    <div class="settings-card-header">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Thông tin chung</strong>
-                    </div>
-                    <div class="settings-group">
-                        <label>Tên ứng dụng</label>
-                        <input type="text" class="settings-input" value="Ẩm Thực 3 Miền">
-                    </div>
-                    <div class="settings-group">
-                        <label>Khẩu hiệu (Slogan)</label>
-                        <input type="text" class="settings-input" value="Nâng tầm văn hóa ẩm thực Việt">
-                    </div>
-                </div>
-
-                <div class="settings-card">
-                    <div class="settings-card-header">
-                        <i class="fas fa-share-alt"></i>
-                        <strong>Mạng xã hội</strong>
-                    </div>
-                    <div class="settings-group">
-                        <label>Facebook Page</label>
-                        <input type="text" class="settings-input" placeholder="https://facebook.com/cuisine3mien">
-                    </div>
-                    <div class="settings-group">
-                        <label>Hotline hỗ trợ</label>
-                        <input type="text" class="settings-input" value="1900 1234">
-                    </div>
+    try {
+        const settings = await apiFetch('/system-settings/');
+        contentArea.innerHTML = `
+            <div class="admin-content-card">
+                <div class="admin-section-header">
+                    <h3><i class="fas fa-cog"></i> Cài đặt hệ thống</h3>
                 </div>
                 
-                <div class="settings-card">
-                    <div class="settings-card-header">
-                        <i class="fas fa-shield-alt"></i>
-                        <strong>Bảo mật & Vận hành</strong>
+                <div class="settings-grid" style="margin-top: 20px;">
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Thông tin chung</strong>
+                        </div>
+                        <div class="settings-group">
+                            <label>Tên ứng dụng</label>
+                            <input type="text" id="sys-app-name" class="settings-input" value="${settings.app_name}">
+                        </div>
+                        <div class="settings-group">
+                            <label>Khẩu hiệu (Slogan)</label>
+                            <input type="text" id="sys-slogan" class="settings-input" value="${settings.slogan}">
+                        </div>
                     </div>
-                    <div class="settings-group">
-                        <label>Chế độ bảo trì</label>
-                        <select class="settings-input">
-                            <option>Tắt</option>
-                            <option>Bật</option>
-                        </select>
+
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <i class="fas fa-share-alt"></i>
+                            <strong>Mạng xã hội</strong>
+                        </div>
+                        <div class="settings-group">
+                            <label>Facebook Page</label>
+                            <input type="text" id="sys-facebook" class="settings-input" value="${settings.facebook_page}">
+                        </div>
+                        <div class="settings-group">
+                            <label>Hotline hỗ trợ</label>
+                            <input type="text" id="sys-hotline" class="settings-input" value="${settings.hotline}">
+                        </div>
                     </div>
-                    <div class="settings-group">
-                        <label>Email admin</label>
-                        <input type="text" class="settings-input" value="admin@cuisine.vn">
+                    
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <i class="fas fa-shield-alt"></i>
+                            <strong>Bảo mật & Vận hành</strong>
+                        </div>
+                        <div class="settings-group">
+                            <label>Chế độ bảo trì</label>
+                            <select id="sys-maintenance" class="settings-input">
+                                <option value="false" ${!settings.maintenance_mode ? 'selected' : ''}>Tắt</option>
+                                <option value="true" ${settings.maintenance_mode ? 'selected' : ''}>Bật</option>
+                            </select>
+                        </div>
+                        <div class="settings-group">
+                            <label>Email admin</label>
+                            <input type="text" id="sys-admin-email" class="settings-input" value="${settings.admin_email}">
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="save-settings-bar">
-                <button class="btn-add" id="btn-save-settings" onclick="saveAdminSettings()">
-                    <i class="fas fa-save"></i> 
-                    <span id="save-text">Lưu tất cả thay đổi</span>
-                </button>
+                <div class="save-settings-bar">
+                    <button class="btn-add" id="btn-save-settings" onclick="saveAdminSettings()">
+                        <i class="fas fa-save"></i> 
+                        <span id="save-text">Lưu tất cả thay đổi</span>
+                    </button>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    } catch (e) {
+        contentArea.innerHTML = '<p>Lỗi tải cài đặt hệ thống.</p>';
+    }
 }
 
 async function loadAdminRegionDishes(regionId, regionName) {
@@ -1770,12 +1824,25 @@ async function saveAdminSettings() {
     const text = document.getElementById('save-text');
     if (!btn) return;
 
+    const payload = {
+        app_name: document.getElementById('sys-app-name').value,
+        slogan: document.getElementById('sys-slogan').value,
+        facebook_page: document.getElementById('sys-facebook').value,
+        hotline: document.getElementById('sys-hotline').value,
+        maintenance_mode: document.getElementById('sys-maintenance').value === 'true',
+        admin_email: document.getElementById('sys-admin-email').value
+    };
+
     btn.disabled = true;
     btn.style.opacity = '0.7';
     text.innerText = 'Đang lưu...';
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+        await apiFetch('/system-settings/1/', {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+        });
+        
         btn.disabled = false;
         btn.style.opacity = '1';
         text.innerText = 'Lưu thành công!';
@@ -1785,7 +1852,12 @@ async function saveAdminSettings() {
             text.innerText = 'Lưu tất cả thay đổi';
             btn.style.background = '';
         }, 2000);
-    }, 800);
+    } catch (e) {
+        alert('Lỗi lưu cài đặt: ' + e.message);
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        text.innerText = 'Thử lại';
+    }
 }
 
 async function loadAdminReports() {
@@ -1867,12 +1939,12 @@ async function loadAdminTrending() {
                         <ul class="dish-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
                             ${posts.slice(0, 10).map((p, i) => `
                                 <li class="dish-item" style="border: 1px solid #f0f0f0; padding: 20px; border-radius: 16px; cursor: pointer; transition:0.3s;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='#f0f0f0'" onclick="window.location.href='chitiet.html?id=${p.post_id}'">
-                                    <div style="font-size: 28px; font-weight: 800; color: #eee; margin-bottom: 10px;">0${i + 1}</div>
+                                    <div style="font-size: 28px; font-weight: 800; color: var(--primary-color); opacity: 0.15; margin-bottom: 10px;">0${i + 1}</div>
                                     <div style="display:flex; align-items:center; gap:15px;">
                                         <img src="${p.thumbnail || 'https://picsum.photos/seed/food/100/100'}" alt="${p.title}" style="width:70px; height:70px; border-radius:12px; object-fit:cover;">
                                         <div class="dish-meta">
-                                            <h4 style="margin:0 0 5px 0;">${p.title}</h4>
-                                            <p style="margin:0; font-size:12px; color:#888;">${p.region_name}</p>
+                                            <h4 style="margin:0 0 5px 0; color: var(--text-main);">${p.title}</h4>
+                                            <p style="margin:0; font-size:12px; color: var(--text-secondary); font-weight: 600;">${p.region_name}</p>
                                         </div>
                                     </div>
                                 </li>
@@ -2039,6 +2111,8 @@ async function initSavedPage() {
     const container = document.getElementById('saved-posts-container');
     if (!container) return;
 
+    let allFavorites = [];
+
     // Wire up filter buttons
     const filterBtns = document.querySelectorAll('.filters .btn-view-recipe');
     filterBtns.forEach(btn => {
@@ -2049,24 +2123,63 @@ async function initSavedPage() {
             });
             btn.style.backgroundColor = 'var(--primary-color)';
             btn.style.color = 'white';
+            
+            const category = btn.innerText.trim();
+            filterSavedPosts(category, allFavorites, container);
         });
     });
 
     try {
         const favorites = await apiFetch('/favorites/');
+        allFavorites = favorites || [];
+        
         container.innerHTML = '';
-        if (!favorites || favorites.length === 0) {
+        if (allFavorites.length === 0) {
             container.innerHTML = '<div style="grid-column: span 2; padding: 40px; text-align: center; color: #666;"><i class="fas fa-bookmark fa-3x" style="color:#eee; margin-bottom:15px;"></i><p>Bạn chưa lưu món ăn nào.</p></div>';
             return;
         }
 
-        favorites.forEach(fav => {
-            if (fav.post_details) {
-                container.appendChild(createPostCard(fav.post_details));
-            }
-        });
+        // Default: Show all
+        filterSavedPosts('Tất cả', allFavorites, container);
     } catch (e) {
         container.innerHTML = `<p style="color:red; padding:20px;">Lỗi tải danh sách đã lưu: ${e.message}</p>`;
+    }
+}
+
+function filterSavedPosts(category, favorites, container) {
+    container.innerHTML = '';
+    
+    const filtered = favorites.filter(fav => {
+        const p = fav.post_details || fav;
+        if (!p) return false;
+        
+        const title = (p.title || '').toLowerCase();
+        const content = (p.content || '').toLowerCase();
+        const recipe = (p.recipe || '').toLowerCase();
+        const text = title + ' ' + content + ' ' + recipe;
+
+        if (category === 'Tất cả') return true;
+        if (category === 'Công thức') {
+            return text.includes('cách làm') || text.includes('công thức') || text.includes('nguyên liệu') || recipe.length > 20;
+        }
+        if (category === 'Nhà hàng') {
+            return text.includes('nhà hàng') || text.includes('quán') || text.includes('địa chỉ') || text.includes('thưởng thức tại');
+        }
+        if (category === 'Bài viết') {
+            // If it's not a recipe and not a restaurant
+            const isRecipe = text.includes('cách làm') || text.includes('công thức') || recipe.length > 20;
+            const isRestaurant = text.includes('nhà hàng') || text.includes('quán') || text.includes('địa chỉ');
+            return !isRecipe && !isRestaurant;
+        }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div style="grid-column: span 2; padding: 40px; text-align: center; color: #999;"><p>Không tìm thấy mục nào trong danh mục "${category}".</p></div>`;
+    } else {
+        filtered.forEach(fav => {
+            container.appendChild(createPostCard(fav.post_details || fav));
+        });
     }
 }
 
@@ -2164,77 +2277,7 @@ async function handleNotifClick(notifId, postId) {
 }
 window.handleNotifClick = handleNotifClick;
 
-async function initSavedPage() {
-    const container = document.getElementById('saved-posts-container');
-    if (!container) return;
-    try {
-        const favorites = await apiFetch('/favorites/');
-        container.innerHTML = '';
-        if (favorites && favorites.length > 0) favorites.forEach(f => container.appendChild(createPostCard(f.post_details || f)));
-        else container.innerHTML = '<div style="grid-column: span 2; padding: 60px; text-align: center;"><h3>Trống</h3></div>';
-    } catch (e) {}
-}
-
-async function initTrendingPage() {
-    const container = document.getElementById('trending-posts-container');
-    if (!container) return;
-    try {
-        const posts = await apiFetch('/public/cuisine-data/');
-        
-        // --- Dynamic Hashtags Extraction ---
-        const hashtagContainer = document.getElementById('trending-keywords-container');
-        if (hashtagContainer) {
-            try {
-                const allPosts = await apiFetch('/posts/?status=Active');
-                const hashtagCounts = {};
-                const hashtagRegex = /#[\wÀ-ỹ]+/g;
-                
-                if (allPosts && allPosts.length > 0) {
-                    allPosts.forEach(p => {
-                        const textToSearch = (p.title + " " + (p.content || "")).replace(/<[^>]*>?/gm, '');
-                        let match;
-                        while ((match = hashtagRegex.exec(textToSearch)) !== null) {
-                            const tag = match[0];
-                            hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
-                        }
-                    });
-                    
-                    const sortedHashtags = Object.keys(hashtagCounts).sort((a, b) => hashtagCounts[b] - hashtagCounts[a]).slice(0, 8);
-                    
-                    if (sortedHashtags.length > 0) {
-                        hashtagContainer.innerHTML = sortedHashtags.map(tag => 
-                            `<span class="hashtag-chip" onclick="window.location.href='timkiem.html?q=${encodeURIComponent(tag.replace('#', ''))}'" style="padding: 8px 15px; background: #eee; border-radius: 20px; font-weight: 500; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--primary-color)';this.style.color='white'" onmouseout="this.style.background='#eee';this.style.color='#333'">${tag}</span>`
-                        ).join('');
-                    } else {
-                        hashtagContainer.innerHTML = '<div style="padding: 10px; color: grey; font-style: italic; font-size: 14px;">Chưa có từ khóa nào nổi bật.</div>';
-                    }
-                }
-            } catch (err) {
-                console.error("Error loading hashtags", err);
-            }
-        }
-
-        if (posts) {
-            // Sort by average rating descending
-            const trending = posts.sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0)).slice(0, 10);
-            container.innerHTML = '';
-            for (const p of trending) {
-                // Fetch full post details for createPostCard
-                const fullPost = await apiFetch(`/posts/${p.post_id}/`);
-                if (fullPost) {
-                    const card = createPostCard(fullPost);
-                    const badge = document.createElement('div');
-                    badge.style = "padding:10px 16px; color:var(--primary-color); font-weight:bold; font-size:12px; display:flex; align-items:center; gap:8px;";
-                    badge.innerHTML = `<i class="fas fa-fire"></i> THỊNH HÀNH (Đánh giá: ${p.avg_rating ? p.avg_rating.toFixed(1) : '---'} ★)`;
-                    card.prepend(badge);
-                    container.appendChild(card);
-                }
-            }
-        }
-    } catch (e) {
-        console.error('Error loading trending posts', e);
-    }
-}
+// Cleaned up duplicate initSavedPage and initTrendingPage
 
 async function toggleFavorite(postId) {
     const token = localStorage.getItem('access_token');
@@ -2463,11 +2506,13 @@ async function renderAccountSettings(container) {
                     </div>
                 </form>
             </div>
-            <div class="card" style="padding: 30px; margin-top: 20px;">
-                <h3 style="color: #e74c3c; margin-bottom: 15px;">Vùng Nguy Hiểm</h3>
-                <p style="color: #666; margin-bottom: 15px;">Khi xóa tài khoản, tất cả dữ liệu, bài viết và thông tin của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.</p>
-                <button class="btn-view-recipe" style="background-color: #ffebee; color: #c0392b; border: 1px solid #ffcdd2;">Xóa tài khoản</button>
-            </div>
+            ${user.role_name !== 'Admin' ? `
+                <div class="card" style="padding: 30px; margin-top: 20px;">
+                    <h3 style="color: #e74c3c; margin-bottom: 15px;">Vùng Nguy Hiểm</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Khi xóa tài khoản, tất cả dữ liệu, bài viết và thông tin của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.</p>
+                    <button class="btn-view-recipe" style="background-color: #ffebee; color: #c0392b; border: 1px solid #ffcdd2;">Xóa tài khoản</button>
+                </div>
+            ` : ''}
         `;
 
         const form = document.getElementById('profile-settings-form');
@@ -2498,52 +2543,118 @@ async function renderAccountSettings(container) {
     }
 }
 
-function renderNotificationSettings(container) {
-    container.innerHTML = `
-        <div class="card" style="padding: 30px;">
-            <h2 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Cài Đặt Thông Báo</h2>
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600;">Thông báo trình duyệt</div>
-                        <div style="font-size: 14px; color: #666;">Nhận thông báo khi có người bình luận hoặc yêu thích món ăn của bạn.</div>
+async function renderNotificationSettings(container) {
+    try {
+        const user = await apiFetch('/auth/me/');
+        if (!user) return;
+        
+        container.innerHTML = `
+            <div class="card" style="padding: 30px;">
+                <h2 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Cài Đặt Thông Báo</h2>
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600;">Thông báo trình duyệt</div>
+                            <div style="font-size: 14px; color: #666;">Nhận thông báo khi có người bình luận hoặc yêu thích món ăn của bạn.</div>
+                        </div>
+                        <input type="checkbox" id="notif-browser" ${user.notif_browser ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: var(--primary-color); cursor: pointer;">
                     </div>
-                    <input type="checkbox" checked style="width: 20px; height: 20px; accent-color: var(--primary-color);">
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600;">Email thông báo</div>
-                        <div style="font-size: 14px; color: #666;">Nhận bản tin hàng tuần về các món ăn đang hot.</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600;">Email thông báo</div>
+                            <div style="font-size: 14px; color: #666;">Nhận bản tin hàng tuần về các món ăn đang hot.</div>
+                        </div>
+                        <input type="checkbox" id="notif-email" ${user.notif_email ? 'checked' : ''} style="width: 20px; height: 20px; accent-color: var(--primary-color); cursor: pointer;">
                     </div>
-                    <input type="checkbox" style="width: 20px; height: 20px; accent-color: var(--primary-color);">
+                    <button class="btn-view-recipe" id="save-notif-btn" style="background-color: var(--primary-color); color: white; width: fit-content; align-self: flex-end;">Lưu cài đặt</button>
                 </div>
-                <button class="btn-view-recipe" style="background-color: var(--primary-color); color: white; width: fit-content; align-self: flex-end;">Lưu cài đặt</button>
             </div>
-        </div>
-    `;
+        `;
+
+        const browserCheck = document.getElementById('notif-browser');
+        browserCheck.addEventListener('change', async (e) => {
+            if (e.target.checked && Notification.permission !== 'granted') {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    alert('Bạn cần cấp quyền trên trình duyệt để nhận thông báo đẩy!');
+                    e.target.checked = false;
+                }
+            }
+        });
+
+        document.getElementById('save-notif-btn').addEventListener('click', async (e) => {
+            const btn = e.target;
+            const browserNotif = browserCheck.checked;
+            const emailNotif = document.getElementById('notif-email').checked;
+            
+            btn.innerText = 'Đang lưu...';
+            btn.disabled = true;
+
+            try {
+                await apiFetch('/auth/me/', {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        notif_browser: browserNotif,
+                        notif_email: emailNotif
+                    })
+                });
+                alert('Cài đặt thông báo đã được lưu!');
+            } catch (err) {
+                alert('Lỗi: ' + err.message);
+            } finally {
+                btn.innerText = 'Lưu cài đặt';
+                btn.disabled = false;
+            }
+        });
+    } catch (e) {
+        container.innerHTML = '<p style="color:red;">Lỗi tải cài đặt thông báo.</p>';
+    }
 }
 
 function renderSecuritySettings(container) {
     container.innerHTML = `
         <div class="card" style="padding: 30px;">
             <h2 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Bảo Mật & Mật Khẩu</h2>
-            <form style="display: flex; flex-direction: column; gap: 20px;">
+            <form id="security-settings-form" style="display: flex; flex-direction: column; gap: 20px;">
                 <div>
                     <label style="display: block; font-weight: 500; margin-bottom: 5px;">Mật khẩu hiện tại</label>
-                    <input type="password" placeholder="••••••••" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    <input type="password" id="current-pass" placeholder="••••••••" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
                 </div>
                 <div>
                     <label style="display: block; font-weight: 500; margin-bottom: 5px;">Mật khẩu mới</label>
-                    <input type="password" placeholder="••••••••" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    <input type="password" id="new-pass" placeholder="••••••••" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
                 </div>
                 <div>
                     <label style="display: block; font-weight: 500; margin-bottom: 5px;">Xác nhận mật khẩu mới</label>
-                    <input type="password" placeholder="••••••••" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    <input type="password" id="confirm-pass" placeholder="••••••••" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
                 </div>
                 <button type="submit" class="btn-view-recipe" style="background-color: var(--primary-color); color: white; width: fit-content; align-self: flex-end;">Cập nhật mật khẩu</button>
             </form>
         </div>
     `;
+
+    const form = document.getElementById('security-settings-form');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPass = document.getElementById('new-pass').value;
+        const confirmPass = document.getElementById('confirm-pass').value;
+
+        if (newPass !== confirmPass) {
+            alert('Mật khẩu xác nhận không khớp!');
+            return;
+        }
+
+        try {
+            await apiFetch('/auth/me/', {
+                method: 'PATCH',
+                body: JSON.stringify({ password: newPass })
+            });
+            alert('Cập nhật mật khẩu thành công!');
+            form.reset();
+        } catch (err) {
+            alert('Lỗi: ' + err.message);
+        }
+    });
 }
 
 function renderAppearanceSettings(container) {
@@ -2691,7 +2802,60 @@ window.loadAdminCategories = loadAdminCategories;
 window.loadAdminRegionDishes = loadAdminRegionDishes;
 window.showPostModal = showPostModal;
 window.saveAdminPost = saveAdminPost;
-window.deleteAdminPost = typeof deleteAdminPost !== 'undefined' ? deleteAdminPost : () => {};
+window.deleteAdminPost = deleteAdminPost;
 window.moderateReport = moderateReport;
-window.saveAdminSettings = typeof saveAdminSettings !== 'undefined' ? saveAdminSettings : () => {};
+window.saveAdminSettings = saveAdminSettings;
+window.loadAdminSettings = loadAdminSettings;
+window.loadAdminOverview = loadAdminOverview;
+window.loadAdminUsers = loadAdminUsers;
+window.loadAdminTrending = loadAdminTrending;
+window.loadAdminReports = loadAdminReports;
+
+async function applyGlobalSettings() {
+    try {
+        const settings = await apiFetch('/system-settings/1/');
+        if (!settings) return;
+
+        // 1. Update App Name in Title and UI
+        document.title = document.title.replace('Ẩm Thực 3 Miền', settings.app_name);
+        
+        const logo = document.querySelector('.logo');
+        if (logo) {
+            const span = logo.querySelector('span');
+            const link = logo.querySelector('a');
+            if (span) {
+                span.innerText = settings.app_name;
+            } else if (link) {
+                // If it's a link with an icon, append the name
+                const icon = link.querySelector('i');
+                link.innerHTML = '';
+                if (icon) link.appendChild(icon);
+                link.appendChild(document.createTextNode(' ' + settings.app_name));
+            }
+        }
+
+        // 2. Update Slogan in Footer or Landing
+        const sloganEl = document.getElementById('footer-slogan') || document.querySelector('.footer-info p');
+        if (sloganEl) sloganEl.innerText = settings.slogan;
+
+        // 3. Maintenance Mode Check
+        if (settings.maintenance_mode) {
+            const userData = JSON.parse(localStorage.getItem('user_data'));
+            if (!userData || userData.role_name !== 'Admin') {
+                document.body.innerHTML = `
+                    <div style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; font-family:sans-serif;">
+                        <i class="fas fa-tools" style="font-size:80px; color:var(--primary-color); margin-bottom:20px;"></i>
+                        <h1 style="color:var(--text-main);">${settings.app_name} đang bảo trì</h1>
+                        <p style="color:var(--text-secondary); max-width:500px; line-height:1.6;">${settings.slogan}<br><br>Chúng tôi đang nâng cấp hệ thống để mang lại trải nghiệm tốt hơn. Vui lòng quay lại sau ít phút.</p>
+                        <div style="margin-top:30px; font-weight:bold; color:var(--primary-color);">Hotline hỗ trợ: ${settings.hotline}</div>
+                    </div>
+                `;
+            }
+        }
+    } catch (e) {
+        console.log('Public branding load failed (Guests)');
+    }
+}
+
+window.applyGlobalSettings = applyGlobalSettings;
 

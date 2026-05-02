@@ -13,6 +13,7 @@ router.register(r'reports', views.ReportViewSet, basename='report')
 router.register(r'follows', views.FollowViewSet, basename='follow')
 router.register(r'notifications', views.NotificationViewSet, basename='notification')
 router.register(r'admin/users', views.UserAdminViewSet, basename='admin-user')
+router.register(r'system-settings', views.SystemSettingViewSet, basename='system-settings')
 
 urlpatterns = [
     path('auth/register/', views.register, name='register'),

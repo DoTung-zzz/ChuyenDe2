@@ -5,11 +5,11 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report, Reaction, Follow, Notification
+from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report, Reaction, Follow, Notification, SystemSetting
 from .serializers import (
     RoleSerializer, UserSerializer, RegionSerializer, PostSerializer, 
     CommentSerializer, RatingSerializer, FavoriteSerializer, ReportSerializer,
-    ReactionSerializer, FollowSerializer, NotificationSerializer
+    ReactionSerializer, FollowSerializer, NotificationSerializer, SystemSettingSerializer
 )
 
 # Authentication Views
@@ -235,11 +235,15 @@ def admin_stats(request):
     if request.user.role and request.user.role.role_name != 'Admin':
         return Response({"error": "Unauthorized"}, status=403)
         
+    from django.db.models import Count
+    region_stats = Region.objects.annotate(post_count=Count('posts')).values('region_name', 'post_count')
+    
     data = {
         'total_users': User.objects.count(),
         'total_posts': Post.objects.count(),
         'total_reports': Report.objects.filter(process_status='Pending').count(),
-        'trending_dishes': Post.objects.filter(status='Active').order_by('-created_at')[:5].values('title', 'region__region_name')
+        'trending_dishes': Post.objects.filter(status='Active').order_by('-created_at')[:5].values('title', 'region__region_name'),
+        'region_stats': list(region_stats)
     }
     return Response(data)
 
@@ -293,3 +297,25 @@ def followed_users(request):
             'full_name': u.full_name
         })
     return Response(data)
+
+class SystemSettingViewSet(viewsets.ModelViewSet):
+    queryset = SystemSetting.objects.all()
+    serializer_class = SystemSettingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SystemSetting.objects.filter(pk=1)
+
+    def list(self, request, *args, **kwargs):
+        settings, created = SystemSetting.objects.get_or_create(pk=1)
+        serializer = self.get_serializer(settings)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        if request.user.role and request.user.role.role_name != 'Admin':
+            return Response({"error": "Unauthorized"}, status=403)
+        settings, created = SystemSetting.objects.get_or_create(pk=1)
+        serializer = self.get_serializer(settings, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
