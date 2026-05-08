@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dành cho Nhà phát triển - Ẩm Thực 3 Miền</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css?v=101">
+    <style>
+        .dev-body {
+            background-color: #f9fafb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            padding-top: 60px;
+        }
+
+        .dev-hero {
+            background: linear-gradient(135deg, #fce4ec 0%, #e0f7fa 100%);
+            border-radius: 20px;
+            margin: 40px auto;
+            max-width: 1200px;
+            padding: 80px 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .dev-hero h1 {
+            font-size: 3rem;
+            color: #1c1e21;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .dev-hero p {
+            font-size: 1.2rem;
+            color: #4b4f56;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .dev-section {
+            max-width: 1200px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        .dev-section-title {
+            text-align: center;
+            font-size: 2rem;
+            color: #1c1e21;
+            margin-bottom: 40px;
+            font-weight: 600;
+        }
+
+        .dev-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .dev-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dev-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .dev-card-icon {
+            background: #1c1e21;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .dev-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #1c1e21;
+        }
+
+        .dev-card p {
+            font-size: 0.95rem;
+            color: #65676b;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .dev-card-link {
+            color: #1877f2;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dev-architecture {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-top: 40px;
+        }
+
+        .arch-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .arch-table th,
+        .arch-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .arch-table th {
+            background-color: #f0f2f5;
+            font-weight: 600;
+            color: #1c1e21;
+        }
+
+        .arch-table tr:hover {
+            background-color: #fafbfc;
+        }
+
+        .arch-badge {
+            background: #e7f3ff;
+            color: #1877f2;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body class="dev-body">
+    <!-- Header -->
+    <header class="header"
+        style="position: fixed; top: 0; width: 100%; z-index: 1000; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div class="header-left">
+            <div class="logo">
+                <a href="/" style="color: inherit; text-decoration: none; font-weight: bold; font-size: 1.2rem;">
+                    <i class="fas fa-utensils"></i> Ẩm Thực 3 Miền <span style="color: #1877f2;">| Chế độ Nhà phát triển</span>
+                </a>
+            </div>
+        </div>
+        <div class="header-center">
+            <!-- Nav hidden for space -->
+        </div>
+        <div class="header-right">
+            <a href="dev_register.html" class="auth-btn"
+                style="padding: 8px 16px; border-radius: 20px; text-decoration: none; background: #1c1e21; color: white; font-weight: 600;">Đăng
+                ký App</a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <div class="dev-hero">
+        <h1>Nền tảng API Ẩm thực 3 Miền</h1>
+        <p>Việc cung cấp API cho bên thứ ba không chỉ đơn thuần là mở cổng dữ liệu, mà là cung cấp một "Sản phẩm lập
+            trình" (API as a Product). Xây dựng ứng dụng mạnh mẽ với kho dữ liệu đặc sản phong phú và hệ thống đánh giá
+            thực tế.</p>
+    </div>
+
+    <!-- API Products Section -->
+    <div class="dev-section">
+        <h2 class="dev-section-title">Bắt đầu khám phá hệ sinh thái API</h2>
+
+        <div class="dev-cards">
+            <!-- Content Delivery API -->
+            <div class="dev-card">
+                <div class="dev-card-icon">
+                    <i class="fas fa-database"></i>
+                </div>
+                <h3>1. Content Delivery API</h3>
+                <p><strong>Danh mục đặc sản:</strong> Chi tiết món ăn, nguồn gốc, văn hóa (Bắc-Trung-Nam).<br>
+                    <strong>Bản đồ ẩm thực:</strong> Tọa độ quán ăn, làng nghề.<br>
+                    <strong>Tìm kiếm &amp; Lọc:</strong> Lọc theo nguyên liệu, vị trí, dịp lễ.
+                </p>
+                <a href="#" class="dev-card-link">Xem tài liệu <i class="fas fa-arrow-right"></i></a>
+            </div>
+
+            <!-- Engagement API -->
+            <div class="dev-card">
+                <div class="dev-card-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h3>2. Engagement API</h3>
+                <p><strong>Đánh giá &amp; Xếp hạng:</strong> Cho phép ứng dụng du lịch/đặt món lấy dữ liệu đánh giá thực tế
+                    từ người dùng.<br>
+                    <strong>Hệ thống Báo cáo:</strong> Gửi báo cáo nội dung sai lệch về hệ thống quản lý.
+                </p>
+                <a href="#" class="dev-card-link">Xem tài liệu <i class="fas fa-arrow-right"></i></a>
+            </div>
+
+            <!-- Search & Discovery API -->
+            <div class="dev-card">
+                <div class="dev-card-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>3. Search &amp; Discovery API</h3>
+                <p><strong>Gợi ý món ăn:</strong> Dựa trên hành vi người dùng hoặc xu hướng mùa lễ hội.<br>
+                    <strong>Phân tích hình ảnh:</strong> API nhận diện món ăn qua hình ảnh (dựa trên Machine Learning).
+                </p>
+                <a href="#" class="dev-card-link">Xem tài liệu <i class="fas fa-arrow-right"></i></a>
+            </div>
+
+            <!-- Developer Experience -->
+            <div class="dev-card">
+                <div class="dev-card-icon">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <h3>4. Developer Experience</h3>
+                <p><strong>API Docs (Swagger/Postman):</strong> Hướng dẫn chi tiết mã lỗi, cấu trúc trả về.<br>
+                    <strong>SDK (Python/JS):</strong> Tích hợp nhanh chóng.<br>
+                    <strong>Dashboard quản lý:</strong> Theo dõi Request, API Key.
+                </p>
+                <a href="#" class="dev-card-link">Xem công cụ <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Architecture Section -->
+    <div class="dev-section">
+        <h2 class="dev-section-title">Mô hình triển khai kỹ thuật</h2>
+        <p style="text-align: center; color: #65676b; max-width: 800px; margin: 0 auto 30px auto;">Để vận hành chuyên
+            nghiệp, hệ thống thiết lập một lớp trung gian quản lý an toàn và hiệu suất cao dành riêng cho các nhà phát
+            triển và đối tác thứ ba.</p>
+
+        <div class="dev-architecture">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Thành phần</th>
+                        <th>Chức năng</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>API Gateway</strong></td>
+                        <td>Quản lý xác thực (API Key), giới hạn số lượt gọi (Rate Limiting) 100 req/ngày (Free Tier).</td>
+                        <td><span class="arch-badge">Hoạt động</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Authentication</strong></td>
+                        <td>Đảm bảo chỉ những bên thứ ba đã đăng ký (bảng api_thirdparty) mới có quyền truy cập dữ liệu.</td>
+                        <td><span class="arch-badge">Hoạt động</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Access Logging</strong></td>
+                        <td>Ghi nhật ký mỗi lần gọi API vào bảng data_access_log (endpoint, method, thời gian).</td>
+                        <td><span class="arch-badge">Hoạt động</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Versioned Endpoint</strong></td>
+                        <td>GET /api/v1/public/cuisine-data/ — endpoint có phiên bản, hỗ trợ ?q=, ?region=, ?limit=</td>
+                        <td><span class="arch-badge">Hoạt động</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin: 60px 0; padding-bottom: 60px;">
+        <a href="dev_register.html"
+            style="background: #1877f2; color: white; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(24, 119, 242, 0.3); transition: all 0.3s;">
+            Đăng ký tài khoản Nhà phát triển ngay <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+        </a>
+    </div>
+
+    <!-- Footer -->
+    <footer style="background: white; padding: 40px 20px; text-align: center; border-top: 1px solid #eee; color: #65676b;">
+        <p>&copy; 2026 Nền tảng Ẩm Thực 3 Miền - Developer Portal. Mọi quyền được bảo lưu.</p>
+    </footer>
+
+    <script src="/static/script.js?v=103"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const devApiKey = localStorage.getItem('dev_api_key');
+            const devPartnerName = localStorage.getItem('dev_partner_name');
+            const headerRight = document.querySelector('.header-right');
+
+            if (devApiKey && headerRight) {
+                // Hiển thị API Key thực từ DB
+                headerRight.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px; position: relative;">
+                        <div style="background: #f0f2f5; padding: 6px 12px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #1c1e21; border: 1px solid #ccd0d5; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;" title="Click để sao chép" onclick="navigator.clipboard.writeText('${devApiKey}'); this.style.background='#d4edda'; setTimeout(()=>this.style.background='#f0f2f5',1500);">
+                            <i class="fas fa-key" style="color: #f5a623; margin-right: 5px;"></i>${devApiKey}
+                        </div>
+                        <div style="cursor: pointer; position: relative;" onclick="var d=document.getElementById('dev-dropdown'); d.style.display = d.style.display==='block' ? 'none' : 'block'; event.stopPropagation();">
+                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(devPartnerName || 'Dev')}&background=f7630c&color=fff" style="width: 35px; height: 35px; border-radius: 50%;">
+                            <div id="dev-dropdown" style="position: absolute; right: 0; top: 45px; background: white; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 180px; z-index: 1000; display: none;">
+                                <a href="#" onclick="event.preventDefault(); ['dev_api_key','dev_partner_name','dev_tier','dev_registered_at'].forEach(k=>localStorage.removeItem(k)); window.location.reload();" style="display: block; padding: 10px 15px; color: #e53e3e; text-decoration: none; font-weight: 500; font-size: 14px;"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.addEventListener('click', () => {
+                    const d = document.getElementById('dev-dropdown');
+                    if (d) d.style.display = 'none';
+                });
+
+                // Gọi API stats thực sự
+                try {
+                    const statsRes = await fetch('/api/developer/stats/', {
+                        headers: { 'X-API-Key': devApiKey }
+                    });
+                    if (statsRes.ok) {
+                        const stats = await statsRes.json();
+                        const hero = document.querySelector('.dev-hero');
+                        if (hero) {
+                            const statsBanner = document.createElement('div');
+                            statsBanner.style.cssText = 'background: white; border-radius: 12px; padding: 20px 30px; margin-top: 30px; display: inline-flex; gap: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);';
+                            statsBanner.innerHTML = `
+                                <div style="text-align: center;">
+                                    <div style="font-size: 28px; font-weight: 700; color: #1877f2;">${stats.total_requests}</div>
+                                    <div style="font-size: 13px; color: #65676b;">Tổng requests</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 28px; font-weight: 700; color: #42b72a;">${stats.requests_today}</div>
+                                    <div style="font-size: 13px; color: #65676b;">Hôm nay</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 28px; font-weight: 700; color: #f5a623;">${stats.remaining_today}</div>
+                                    <div style="font-size: 13px; color: #65676b;">Còn lại hôm nay</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 28px; font-weight: 700; color: #1c1e21;">${stats.tier.toUpperCase()}</div>
+                                    <div style="font-size: 13px; color: #65676b;">Tier</div>
+                                </div>
+                            `;
+                            hero.appendChild(statsBanner);
+                        }
+                    }
+                } catch(e) { /* stats optional */ }
+
+                // Ẩn nút CTA đăng ký
+                const ctaDiv = document.querySelector('div[style*="text-align: center; margin: 60px"]');
+                if (ctaDiv) {
+                    ctaDiv.innerHTML = `
+                        <div style="background: #e7f3ff; color: #1877f2; padding: 15px 30px; border-radius: 12px; display: inline-block; font-weight: 600;">
+                            <i class="fas fa-check-circle"></i> Bạn đã là Nhà phát triển. API Key đang hiển thị ở góc phải phía trên. Click để sao chép.
+                        </div>
+                    `;
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

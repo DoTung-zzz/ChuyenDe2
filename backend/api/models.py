@@ -129,9 +129,20 @@ class Report(models.Model):
         return f"Report {self.report_id} for {self.post.title}"
 
 class ThirdParty(models.Model):
+    TIER_CHOICES = [
+        ('free', 'Free'),
+        ('basic', 'Basic'),
+        ('premium', 'Premium'),
+    ]
     partner_id = models.AutoField(primary_key=True)
     partner_name = models.CharField(max_length=100)
+    partner_email = models.EmailField(unique=True)
+    company = models.CharField(max_length=200, blank=True, null=True)
+    company_size = models.CharField(max_length=20, blank=True, null=True)
+    role = models.CharField(max_length=50, blank=True, null=True)
     api_key = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    tier = models.CharField(max_length=20, choices=TIER_CHOICES, default='free')
+    is_active = models.BooleanField(default=True)
     registered_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -140,6 +151,9 @@ class ThirdParty(models.Model):
 class DataAccessLog(models.Model):
     log_id = models.AutoField(primary_key=True)
     partner = models.ForeignKey(ThirdParty, on_delete=models.CASCADE, related_name='logs')
+    endpoint = models.CharField(max_length=200, default='/')
+    method = models.CharField(max_length=10, default='GET')
+    response_status = models.IntegerField(default=200)
     accessed_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

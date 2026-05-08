@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký Nhà phát triển - Ẩm Thực 3 Miền</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css?v=102">
+    <style>
+        .dev-reg-body {
+            background-color: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .wizard-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            padding: 40px;
+            position: relative;
+        }
+
+        .wizard-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .wizard-header h2 {
+            color: #1c1e21;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .wizard-header p {
+            color: #65676b;
+            font-size: 14px;
+        }
+
+        /* Progress Bar */
+        .progress-bar-container {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .progress-bar-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #e4e6eb;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .progress-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 4px;
+            background: #1877f2;
+            transform: translateY(-50%);
+            z-index: 2;
+            transition: width 0.3s ease;
+            width: 0%;
+            /* 0, 33%, 66%, 100% */
+        }
+
+        .step-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #e4e6eb;
+            color: #65676b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 3;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .step-circle.active {
+            background: #1877f2;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(24, 119, 242, 0.2);
+        }
+
+        .step-circle.completed {
+            background: #1877f2;
+            color: white;
+        }
+
+        /* Form Steps */
+        .wizard-step {
+            display: none;
+            animation: fadeIn 0.4s;
+        }
+
+        .wizard-step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #1c1e21;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .input-group input,
+        .input-group select,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ccd0d5;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+            background-color: #f5f6f7;
+            box-sizing: border-box;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus,
+        .input-group textarea:focus {
+            border-color: #1877f2;
+            outline: none;
+            background-color: white;
+            box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
+        }
+
+        .wizard-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .btn-prev {
+            background: #e4e6eb;
+            color: #4b4f56;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-prev:hover {
+            background: #d8dadf;
+        }
+
+        .btn-next,
+        .btn-submit {
+            background: #1877f2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-next:hover,
+        .btn-submit:hover {
+            background: #166fe5;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .role-option {
+            border: 1px solid #ccd0d5;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            background: #f5f6f7;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .role-option:hover {
+            border-color: #1877f2;
+        }
+
+        .role-option.selected {
+            background: #e7f3ff;
+            border-color: #1877f2;
+            color: #1877f2;
+        }
+
+        .role-option i {
+            display: block;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body class="dev-reg-body">
+
+    <div class="wizard-container">
+        <a href="login.html"
+            style="position: absolute; top: 20px; left: 20px; color: #65676b; text-decoration: none; font-size: 14px;">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+
+        <div class="wizard-header">
+            <h2>Tham gia Developer Portal</h2>
+            <p>Mở rộng ứng dụng của bạn với Nền tảng Ẩm Thực 3 Miền API</p>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-line" id="progress-line"></div>
+            <div class="step-circle active" id="circle-1">1</div>
+            <div class="step-circle" id="circle-2">2</div>
+            <div class="step-circle" id="circle-3">3</div>
+        </div>
+
+        <form id="dev-register-form">
+            <!-- Step 1: Register -->
+            <div class="wizard-step active" id="step-1">
+                <h3 style="margin-bottom: 20px; color: #1c1e21; font-size: 18px;">Bước 1: Thông tin tài khoản</h3>
+                <div class="input-group">
+                    <label>Tên đăng nhập</label>
+                    <input type="text" id="dev-username" placeholder="Nhập tên đăng nhập" required>
+                </div>
+                <div class="input-group">
+                    <label>Email liên hệ</label>
+                    <input type="email" id="dev-email" placeholder="dev@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Mật khẩu</label>
+                    <input type="password" id="dev-password" placeholder="••••••••" required>
+                </div>
+                <div class="input-group">
+                    <label>Xác nhận mật khẩu</label>
+                    <input type="password" id="dev-confirm-password" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <!-- Step 2: Contact Info -->
+            <div class="wizard-step" id="step-2">
+                <h3 style="margin-bottom: 20px; color: #1c1e21; font-size: 18px;">Bước 2: Thông tin liên hệ</h3>
+                <div class="input-group">
+                    <label>Họ và Tên</label>
+                    <input type="text" id="dev-fullname" placeholder="Nhập họ tên đầy đủ của bạn" required>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Tuổi</label>
+                        <input type="number" id="dev-age" placeholder="VD: 25" min="16" max="100">
+                    </div>
+                    <div class="input-group" style="flex: 2;">
+                        <label>Số điện thoại</label>
+                        <input type="tel" id="dev-phone" placeholder="VD: 0987654321">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: About You -->
+            <div class="wizard-step" id="step-3">
+                <h3 style="margin-bottom: 20px; color: #1c1e21; font-size: 18px;">Bước 3: Về Doanh nghiệp / Tổ chức</h3>
+
+                <div style="display: flex; gap: 15px;">
+                    <div class="input-group" style="flex: 2;">
+                        <label>Tên Doanh nghiệp / Dự án</label>
+                        <input type="text" id="dev-company" placeholder="Nhập tên doanh nghiệp">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>Số lượng thành viên</label>
+                        <select id="dev-company-size">
+                            <option value="1">1 (Cá nhân)</option>
+                            <option value="2-10">2 - 10 người</option>
+                            <option value="11-50">11 - 50 người</option>
+                            <option value="51-200">51 - 200 người</option>
+                            <option value="200+">Hơn 200 người</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Vai trò của bạn (Chọn 1)</label>
+                    <div class="options-grid" id="role-grid">
+                        <div class="role-option" data-role="Developer">
+                            <i class="fas fa-code"></i> Developer
+                        </div>
+                        <div class="role-option" data-role="Marketer">
+                            <i class="fas fa-bullhorn"></i> Marketer
+                        </div>
+                        <div class="role-option" data-role="Analyst">
+                            <i class="fas fa-chart-bar"></i> Analyst
+                        </div>
+                        <div class="role-option" data-role="Product Manager">
+                            <i class="fas fa-tasks"></i> Product Manager
+                        </div>
+                        <div class="role-option" data-role="Student">
+                            <i class="fas fa-user-graduate"></i> Student
+                        </div>
+                        <div class="role-option" data-role="Owner/Founder">
+                            <i class="fas fa-building"></i> Owner/Founder
+                        </div>
+                        <div class="role-option" data-role="Other">
+                            <i class="fas fa-ellipsis-h"></i> Khác
+                        </div>
+                    </div>
+                    <input type="hidden" id="dev-role" required>
+                </div>
+            </div>
+
+            <div class="wizard-footer">
+                <button type="button" class="btn-prev" id="btn-prev" style="display: none;">Quay lại</button>
+                <button type="button" class="btn-next" id="btn-next" style="margin-left: auto;">Tiếp tục</button>
+                <button type="submit" class="btn-submit" id="btn-submit" style="display: none; margin-left: auto;">Hoàn
+                    tất Đăng ký</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="/static/script.js?v=102"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let currentStep = 1;
+            const totalSteps = 3;
+
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+            const btnSubmit = document.getElementById('btn-submit');
+            const progressLine = document.getElementById('progress-line');
+
+            function updateUI() {
+                // Update Steps visibility
+                document.querySelectorAll('.wizard-step').forEach((el, index) => {
+                    el.classList.toggle('active', index + 1 === currentStep);
+                });
+
+                // Update Circles
+                document.querySelectorAll('.step-circle').forEach((el, index) => {
+                    if (index + 1 < currentStep) {
+                        el.classList.add('completed');
+                        el.classList.remove('active');
+                        el.innerHTML = '<i class="fas fa-check"></i>';
+                    } else if (index + 1 === currentStep) {
+                        el.classList.add('active');
+                        el.classList.remove('completed');
+                        el.innerHTML = currentStep;
+                    } else {
+                        el.classList.remove('active', 'completed');
+                        el.innerHTML = index + 1;
+                    }
+                });
+
+                // Update Progress Line
+                const percentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
+                progressLine.style.width = percentage + '%';
+
+                // Update Buttons
+                btnPrev.style.display = currentStep > 1 ? 'block' : 'none';
+                if (currentStep === totalSteps) {
+                    btnNext.style.display = 'none';
+                    btnSubmit.style.display = 'block';
+                } else {
+                    btnNext.style.display = 'block';
+                    btnSubmit.style.display = 'none';
+                }
+            }
+
+            function validateStep() {
+                // Basic validation before moving next
+                const currentStepEl = document.getElementById('step-' + currentStep);
+                const inputs = currentStepEl.querySelectorAll('input[required]');
+                let valid = true;
+                inputs.forEach(input => {
+                    if (!input.value.trim()) {
+                        input.style.borderColor = 'red';
+                        valid = false;
+                    } else {
+                        input.style.borderColor = '#ccd0d5';
+                    }
+                });
+
+                if (currentStep === 1) {
+                    const pwd = document.getElementById('dev-password').value;
+                    const confirmPwd = document.getElementById('dev-confirm-password').value;
+                    if (pwd && confirmPwd && pwd !== confirmPwd) {
+                        alert('Mật khẩu xác nhận không khớp!');
+                        return false;
+                    }
+                }
+
+                if (currentStep === 3) {
+                    if (!document.getElementById('dev-role').value) {
+                        alert('Vui lòng chọn vai trò của bạn!');
+                        return false;
+                    }
+                }
+
+                return valid;
+            }
+
+            btnNext.addEventListener('click', () => {
+                if (validateStep()) {
+                    currentStep++;
+                    updateUI();
+                }
+            });
+
+            btnPrev.addEventListener('click', () => {
+                currentStep--;
+                updateUI();
+            });
+
+            // Role selection logic
+            const roleOptions = document.querySelectorAll('.role-option');
+            roleOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    roleOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    document.getElementById('dev-role').value = option.getAttribute('data-role');
+                });
+            });
+
+            // Submit logic
+            const form = document.getElementById('dev-register-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!validateStep()) return;
+
+                const btnSubmitEl = document.getElementById('btn-submit');
+                btnSubmitEl.disabled = true;
+                btnSubmitEl.textContent = 'Đang xử lý...';
+
+                const payload = {
+                    partner_name: document.getElementById('dev-username').value.trim(),
+                    partner_email: document.getElementById('dev-email').value.trim(),
+                    company: document.getElementById('dev-company').value.trim(),
+                    company_size: document.getElementById('dev-company-size').value,
+                    role: document.getElementById('dev-role').value,
+                };
+
+                try {
+                    const response = await fetch('/api/developer/register/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // Lưu API Key vào localStorage để developer.html hiển thị
+                        localStorage.setItem('dev_api_key', data.api_key);
+                        localStorage.setItem('dev_partner_name', data.partner_name);
+                        localStorage.setItem('dev_tier', data.tier);
+                        localStorage.setItem('dev_registered_at', data.registered_at);
+
+                        // Hiển thị màn hình thành công ngay tại chỗ
+                        document.querySelector('.wizard-container').innerHTML = `
+                            <div style="text-align: center; padding: 40px 20px;">
+                                <div style="font-size: 64px; margin-bottom: 20px;">CHÚC MỪNG</div>
+                                <h2 style="color: #1c1e21; margin-bottom: 10px;">Đăng ký thành công!</h2>
+                                <p style="color: #65676b; margin-bottom: 30px;">Chào mừng <strong>${data.partner_name}</strong> đến với Developer Portal</p>
+
+                                <div style="background: #f0f2f5; border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: left;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                        <i class="fas fa-key" style="color: #f5a623;"></i>
+                                        <span style="font-weight: 700; color: #1c1e21;">API Key của bạn</span>
+                                        <span style="background: #e7f3ff; color: #1877f2; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600;">FREE TIER</span>
+                                    </div>
+                                    <div style="background: #1c1e21; color: #4ade80; font-family: monospace; font-size: 15px; padding: 16px; border-radius: 8px; word-break: break-all; letter-spacing: 1px;">
+                                        ${data.api_key}
+                                    </div>
+                                    <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                        <button onclick="navigator.clipboard.writeText('${data.api_key}'); this.innerHTML='<i class=\\'fas fa-check\\'></i> Đã sao chép!'; this.style.background='#1a7340';" style="background: #1877f2; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+                                            <i class="fas fa-copy"></i> Sao chép
+                                        </button>
+                                        <span style="font-size: 13px; color: #e53e3e; display: flex; align-items: center; gap: 5px;">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            Lưu lại ngay! Chúng tôi không hiển thị lại lần sau.
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div style="background: #e7f3ff; border-radius: 10px; padding: 16px; margin-bottom: 24px; text-align: left;">
+                                    <p style="margin: 0 0 8px; font-weight: 600; color: #1877f2;"><i class="fas fa-info-circle"></i> Cách sử dụng</p>
+                                    <code style="font-size: 13px; color: #1c1e21; display: block; background: white; padding: 10px; border-radius: 6px; word-break: break-all;">
+                                        GET /api/v1/public/cuisine-data/<br>
+                                        X-API-Key: ${data.api_key}
+                                    </code>
+                                    <p style="margin: 10px 0 0; font-size: 13px; color: #65676b;">Giới hạn: <strong>${data.rate_limit_per_day} requests/ngày</strong> (Free Tier)</p>
+                                </div>
+
+                                <a href="developer.html" style="background: #1877f2; color: white; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; display: inline-block;">
+                                    Vào Developer Portal <i class="fas fa-arrow-right" style="margin-left: 6px;"></i>
+                                </a>
+                            </div>
+                        `;
+                    } else {
+                        btnSubmitEl.disabled = false;
+                        btnSubmitEl.textContent = 'Hoàn tất Đăng ký';
+                        alert('Đăng ký thất bại: ' + (data.error || JSON.stringify(data)));
+                    }
+                } catch (error) {
+                    btnSubmitEl.disabled = false;
+                    btnSubmitEl.textContent = 'Hoàn tất Đăng ký';
+                    alert('Lỗi kết nối. Vui lòng thử lại sau.');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
