@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuisine Admin - Quản lý ẩm thực 3 miền</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css?v=101">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <!-- Admin Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-logo">
+                <i class="fas fa-utensils"></i>
+                <span>Cuisine Admin</span>
+            </div>
+            <ul class="admin-menu">
+                <li class="admin-menu-item active" id="menu-overview">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Tổng quan</span>
+                </li>
+
+                <li class="admin-menu-item" id="menu-users">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Quản lý người dùng</span>
+                </li>
+                <li class="admin-menu-item" id="menu-categories">
+                    <i class="fas fa-list"></i>
+                    <span>Danh mục món ăn</span>
+                </li>
+                <li class="admin-menu-item" id="menu-trending">
+                    <i class="fas fa-fire"></i>
+                    <span>Xu hướng ẩm thực</span>
+                </li>
+                <li class="admin-menu-item" id="menu-reports">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Quản lý báo cáo</span>
+                </li>
+                <li class="admin-menu-item" id="menu-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Cài đặt hệ thống</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Admin Main Content -->
+        <main class="admin-main">
+            <!-- Admin Header -->
+            <header class="admin-header">
+                <div class="welcome-text">
+                    <h1 id="admin-view-title">Chào ngày mới, Quản trị viên!</h1>
+                    <p id="admin-view-subtitle">Hôm nay là một ngày tuyệt vời để khám phá ẩm thực.</p>
+                </div>
+                <div class="header-right">
+                    <div class="action-btn" title="Thông báo">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="user-profile" id="userAvatarBtn">
+                        <img src="https://i.pravatar.cc/150?u=admin" alt="Admin Avatar" class="avatar-small">
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <a href="profile.html"><i class="fas fa-user"></i> Xem thông tin quản trị</a>
+                            <a href="settings.html"><i class="fas fa-cog"></i> Cài đặt hệ thống</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="login.html" class="logout-item"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dynamic Content Area -->
+            <div id="admin-content-area">
+                <!-- Initial Overview Content -->
+                <section class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <h3>Tổng người dùng</h3>
+                            <div class="value" id="stat-total-users">--</div>
+                        </div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-icon green"><i class="fas fa-edit"></i></div>
+                        <div class="stat-info">
+                            <h3>Tổng bài đăng</h3>
+                            <div class="value" id="stat-total-posts">--</div>
+                        </div>
+                    </div>
+                    <div class="stat-card red" style="cursor: pointer;" onclick="document.getElementById('menu-reports').click()">
+                        <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="stat-info">
+                            <h3>Báo cáo chưa xử lý</h3>
+                            <div class="value" id="stat-total-reports">--</div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="dashboard-content-grid">
+                    <div class="chart-card">
+                        <div class="card-header">
+                            <h3>Xu hướng món ăn (7 ngày qua)</h3>
+                        </div>
+                        <div class="chart-placeholder">
+                            <!-- Placeholder bars for initial load -->
+                            <div class="bar-wrapper"><div class="bar" style="height: 60%; background: #f7630c;"></div><span class="bar-label">Đang tải...</span></div>
+                            <div class="bar-wrapper"><div class="bar" style="height: 45%; background: #1877f2;"></div><span class="bar-label">Đang tải...</span></div>
+                            <div class="bar-wrapper"><div class="bar" style="height: 75%; background: #42b72a;"></div><span class="bar-label">Đang tải...</span></div>
+                        </div>
+                    </div>
+
+                    <div class="top-dishes-card">
+                        <div class="card-header">
+                            <h3>Món ăn được đánh giá cao nhất</h3>
+                        </div>
+                        <ul class="dish-list">
+                            <li class="dish-item">
+                                <img src="https://picsum.photos/seed/pho/100/100" alt="Phở" class="dish-img">
+                                <div class="dish-meta">
+                                    <h4>Phở Bò Gia Truyền</h4>
+                                    <p>Hà Nội</p>
+                                    <div class="rating"><i class="fas fa-star"></i> 4.9</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <nav class="bottom-navbar">
+        <a href="admin.html" class="bottom-nav-item active">
+            <i class="fas fa-chart-line"></i>
+            <span>Tổng quan</span>
+        </a>
+        <a href="/" class="bottom-nav-item">
+            <i class="fas fa-home"></i>
+            <span>Trang chủ</span>
+        </a>
+        <a href="settings.html" class="bottom-nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Cài đặt</span>
+        </a>
+    </nav>
+    <script src="/static/script.js?v=101"></script>
+</body>
+</html>

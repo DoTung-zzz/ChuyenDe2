@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Chủ - Ẩm Thực 3 Miền</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css?v=101">
+</head>
+
+<body>
+    <!-- Shared Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <a href="/" style="color: inherit; text-decoration: none;"><i class="fas fa-utensils"></i></a>
+            </div>
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" placeholder="Tìm kiếm món ngon..." id="search-input">
+            </div>
+        </div>
+
+        <div class="header-center">
+            <a href="/" class="nav-item active" title="Trang chủ">
+                <i class="fas fa-home"></i>
+            </a>
+            <a href="dacsan.html" class="nav-item" title="Đặc sản">
+                <i class="fas fa-star"></i>
+            </a>
+        </div>
+
+        <div class="header-right">
+            <div class="action-btn" title="Thông báo">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="user-profile" id="userAvatarBtn">
+                <img src="https://i.pravatar.cc/150?u=user" alt="User Avatar" class="avatar-small">
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="profile.html"><i class="fas fa-user"></i> Xem thông tin người dùng</a>
+                    <a href="settings.html"><i class="fas fa-cog"></i> Cài đặt</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="login.html" class="logout-item"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Sidebar Trái -->
+        <aside class="sidebar-left">
+            <ul class="sidebar-menu">
+                <li class="menu-item">
+                    <a href="profile.html" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; width: 100%;">
+                        <img src="https://i.pravatar.cc/150?u=user" alt="User" class="avatar-menu">
+                        <span>Người dùng</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="dacsan.html"
+                        style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; width: 100%;">
+                        <div class="menu-icon specialty"><i class="fas fa-star"></i></div>
+                        <span>Đặc sản vùng miền</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="saved.html" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; width: 100%;">
+                        <div class="menu-icon saved"><i class="fas fa-bookmark"></i></div>
+                        <span>Món đã lưu</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="trending.html" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; width: 100%;">
+                        <div class="menu-icon trending"><i class="fas fa-fire"></i></div>
+                        <span>Xu hướng ẩm thực</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <p>&copy; 2026 Ẩm Thực 3 Miền</p>
+                <p>Nền tảng số giới thiệu ẩm thực Việt Nam</p>
+            </div>
+        </aside>
+
+        <!-- Feed Chính -->
+        <section class="feed-container">
+            <div class="card create-post" id="create-post-box">
+                <div class="post-top">
+                    <img src="https://i.pravatar.cc/150?u=user" alt="User" class="avatar-medium">
+                    <a href="dangbai.html" style="flex: 1; text-decoration: none;">
+                        <button class="mock-input" style="width: 100%;">Hôm nay bạn ăn gì?</button>
+                    </a>
+                </div>
+                <div class="post-divider"></div>
+                <div class="post-actions-creation">
+                    <a href="dangbai.html" class="action-item" style="text-decoration: none; color: inherit;">
+                        <i class="fas fa-video video-icon"></i>
+                        <span>Ảnh/Video</span>
+                    </a>
+                    <a href="dangbai.html" class="action-item" style="text-decoration: none; color: inherit;">
+                        <i class="fas fa-map-marker-alt location-icon"></i>
+                        <span>Địa điểm</span>
+                    </a>
+                    <a href="dangbai.html" class="action-item" style="text-decoration: none; color: inherit;">
+                        <i class="fas fa-smile feelings-icon"></i>
+                        <span>Cảm xúc</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="post-list" id="post-list">
+                <div style="padding: 40px; text-align: center;">
+                    <i class="fas fa-spinner fa-spin fa-3x" style="color: var(--primary-color);"></i>
+                    <p style="margin-top: 15px;">Đang tải tinh hoa ẩm thực...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sidebar Phải -->
+        <aside class="sidebar-right">
+            <div class="suggestions-card card">
+                <h3>GỢI Ý MÓN MỚI</h3>
+                <ul class="suggestion-list" id="suggested-posts-list">
+                    <div style="padding: 10px; color: grey; font-style: italic; font-size: 13px; text-align: center;">Đang tải gợi ý...</div>
+                </ul>
+            </div>
+        </aside>
+    </main>
+    <nav class="bottom-navbar">
+        <a href="index.html" class="bottom-nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Trang chủ</span>
+        </a>
+        <a href="dacsan.html" class="bottom-nav-item">
+            <i class="fas fa-star"></i>
+            <span>Đặc sản</span>
+        </a>
+        <a href="saved.html" class="bottom-nav-item">
+            <i class="fas fa-bookmark"></i>
+            <span>Đã lưu</span>
+        </a>
+        <a href="profile.html" class="bottom-nav-item">
+            <i class="fas fa-user"></i>
+            <span>Cá nhân</span>
+        </a>
+    </nav>
+    <script src="/static/script.js?v=101"></script>
+</body>
+
+</html>

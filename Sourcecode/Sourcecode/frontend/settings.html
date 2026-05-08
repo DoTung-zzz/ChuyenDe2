@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cài Đặt - Ẩm Thực 3 Miền</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css?v=3.4">
+</head>
+<body>
+    <!-- Shared Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <a href="/" style="color: inherit; text-decoration: none;"><i class="fas fa-utensils"></i></a>
+            </div>
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" placeholder="Tìm kiếm..." id="search-input">
+            </div>
+        </div>
+        <div class="header-center">
+            <a href="/" class="nav-item" title="Trang chủ"><i class="fas fa-home"></i></a>
+            <a href="dacsan.html" class="nav-item" title="Đặc sản"><i class="fas fa-star"></i></a>
+        </div>
+        <div class="header-right">
+            <div class="action-btn"><i class="fas fa-bell"></i></div>
+            <div class="user-profile" id="userAvatarBtn">
+                <img src="https://i.pravatar.cc/150?u=user" alt="User Avatar" class="avatar-small">
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="profile.html"><i class="fas fa-user"></i> Xem thông tin người dùng</a>
+                    <a href="settings.html"><i class="fas fa-cog"></i> Cài đặt</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="login.html" class="logout-item"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Sidebar Left -->
+        <aside class="sidebar-left">
+            <ul class="sidebar-menu">
+                <li class="menu-item active" id="tab-account" onclick="switchSettingsTab('tab-account')">
+                    <i class="fas fa-user-cog menu-icon" style="background: var(--primary-color);"></i>
+                    <span style="font-weight: bold;">Tài khoản</span>
+                </li>
+                <li class="menu-item" id="tab-notifications" onclick="switchSettingsTab('tab-notifications')">
+                    <i class="fas fa-bell menu-icon" style="background: #e67e22;"></i>
+                    <span>Thông báo</span>
+                </li>
+                <li class="menu-item" id="tab-security" onclick="switchSettingsTab('tab-security')">
+                    <i class="fas fa-shield-alt menu-icon" style="background: #27ae60;"></i>
+                    <span>Bảo mật</span>
+                </li>
+                <li class="menu-item" id="tab-appearance" onclick="switchSettingsTab('tab-appearance')">
+                    <i class="fas fa-paint-brush menu-icon" style="background: #8e44ad;"></i>
+                    <span>Giao diện</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Settings Content -->
+        <section class="feed-container">
+            <div class="card" style="padding: 30px;">
+                <h2 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">Cài Đặt Tài Khoản</h2>
+                
+                <form id="profile-settings-form" style="display: flex; flex-direction: column; gap: 20px;">
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <img src="https://i.pravatar.cc/150?u=user" alt="User Avatar" id="settings-avatar" style="width: 80px; height: 80px; border-radius: 50%;">
+                        <div>
+                            <button type="button" class="btn-view-recipe" style="background-color: var(--primary-color); color: white;">Đổi ảnh đại diện</button>
+                            <button type="button" class="btn-view-recipe" style="background-color: #f1f1f1; color: #333; margin-left: 10px;">Xóa ảnh</button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Tên hiển thị</label>
+                        <input type="text" id="settings-fullname" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Email</label>
+                        <input type="email" id="settings-email" disabled style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #f9f9f9;">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Tiểu sử (Slogan)</label>
+                        <textarea id="settings-bio" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; resize: vertical;"></textarea>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 5px;">Trạng thái tài khoản</label>
+                        <input type="text" id="settings-status" disabled style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #f9f9f9;">
+                    </div>
+                    
+                    <div style="margin-top: 10px; text-align: right;">
+                        <button type="button" class="btn-view-recipe" style="background-color: #f1f1f1; color: #333;" onclick="window.location.href='profile.html'">Hủy</button>
+                        <button type="submit" class="btn-view-recipe" style="background-color: var(--primary-color); color: white; margin-left: 10px;">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card" style="padding: 30px; margin-top: 20px;">
+                <h3 style="color: #e74c3c; margin-bottom: 15px;">Vùng Nguy Hiểm</h3>
+                <p style="color: #666; margin-bottom: 15px;">Khi xóa tài khoản, tất cả dữ liệu, bài viết và thông tin của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.</p>
+                <button class="btn-view-recipe" style="background-color: #ffebee; color: #c0392b; border: 1px solid #ffcdd2;">Xóa tài khoản</button>
+            </div>
+        </section>
+    </main>
+    <nav class="bottom-navbar">
+        <a href="/" class="bottom-nav-item">
+            <i class="fas fa-home"></i>
+            <span>Trang chủ</span>
+        </a>
+        <a href="dacsan.html" class="bottom-nav-item">
+            <i class="fas fa-star"></i>
+            <span>Đặc sản</span>
+        </a>
+        <a href="saved.html" class="bottom-nav-item">
+            <i class="fas fa-bookmark"></i>
+            <span>Đã lưu</span>
+        </a>
+        <a href="profile.html" class="bottom-nav-item">
+            <i class="fas fa-user"></i>
+            <span>Cá nhân</span>
+        </a>
+    </nav>
+    <script src="/static/script.js?v=100"></script>
+</body>
+</html>
