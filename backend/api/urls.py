@@ -23,5 +23,14 @@ urlpatterns = [
     path('admin/stats/', views.admin_stats, name='admin_stats'),
     path('users/<int:pk>/profile/', views.user_profile, name='user-profile'),
     path('followed-users/', views.followed_users, name='followed-users'),
+
+    # Developer Portal Routes
+    path('developer/register/', views.developer_register, name='developer-register'),
+    path('developer/stats/', views.developer_stats, name='developer-stats'),
+    path('developer/revoke/', views.developer_revoke, name='developer-revoke'),
+
+    # Versioned Public API (protected by ApiKeyAuthMiddleware)
+    path('v1/public/cuisine-data/', views.public_cuisine_data_v1, name='public-v1-cuisine'),
+
     path('', include(router.urls)),
 ]

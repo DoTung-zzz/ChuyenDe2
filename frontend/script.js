@@ -22,9 +22,18 @@ async function apiFetch(endpoint, options = {}) {
         });
 
         if (response.status === 401) {
+            const tokenExisted = !!localStorage.getItem('access_token');
             localStorage.removeItem('access_token');
-            if (!window.location.pathname.includes('login.html')) {
+            const publicPages = ['login.html', 'index.html', 'dacsan.html', 'trending.html', 'developer.html', 'dev_register.html'];
+            const path = window.location.pathname;
+            const isPublic = publicPages.some(page => path.includes(page)) || path === '/' || path.endsWith('/');
+            if (!isPublic) {
                 window.location.href = 'login.html';
+            } else {
+                // If public, just reload the UI to reflect guest state or do nothing
+                if (tokenExisted && !path.includes('login.html')) {
+                    window.location.reload();
+                }
             }
             return null;
         }
@@ -69,7 +78,7 @@ function applyTheme() {
 }
 
 function checkAuth() {
-    const publicPages = ['login.html', 'index.html', 'dacsan.html', 'trending.html'];
+    const publicPages = ['login.html', 'index.html', 'dacsan.html', 'trending.html', 'developer.html', 'dev_register.html'];
     const path = window.location.pathname;
     const isPublic = publicPages.some(page => path.includes(page)) || path === '/' || path.endsWith('/');
     const token = localStorage.getItem('access_token');
@@ -87,13 +96,21 @@ function checkAuth() {
     const isHome = path.includes('index.html') || path === '/' || path.endsWith('/');
     if (isHome) {
         const userData = JSON.parse(localStorage.getItem('user_data'));
-        if (userData && userData.role_name === 'Admin') {
-            window.location.href = 'admin.html';
-            return;
+        if (userData) {
+            if (userData.role_name === 'Admin') {
+                window.location.href = 'admin.html';
+                return;
+            }
+            const isDeveloper = userData.bio && (userData.bio.includes('Role: Developer') || userData.bio.includes('Company:'));
+            if (isDeveloper) {
+                window.location.href = 'developer.html';
+                return;
+            }
         }
     }
 
     if (!token && !isPublic) {
+        console.warn('Redirecting to login from:', path, 'isPublic:', isPublic);
         window.location.href = 'login.html';
     }
 }
@@ -103,7 +120,7 @@ async function updateUserUI() {
     const headerRight = document.querySelector('.header-right');
 
     if (!token) {
-        if (headerRight) {
+        if (headerRight && !window.location.pathname.includes('developer.html')) {
             headerRight.innerHTML = `
                 <a href="/login.html" style="
                     background: var(--primary-color);
@@ -124,8 +141,8 @@ async function updateUserUI() {
         const createPostBox = document.getElementById('create-post-box');
         if (createPostBox) createPostBox.style.display = 'none';
 
-        // Hide profile menu item in sidebar for guests
-        const sidebarProfile = document.querySelector('.sidebar-menu .menu-item:first-child');
+        // Hide profile menu item in sidebar for guests (look for specific link instead of first-child)
+        const sidebarProfile = document.querySelector('.sidebar-menu .menu-item a[href="profile.html"]')?.closest('.menu-item');
         if (sidebarProfile) sidebarProfile.style.display = 'none';
         
         return;
@@ -166,7 +183,7 @@ async function updateUserUI() {
                 }
             } catch (e) { console.log('Notif badge load error'); }
 
-            const authorTitles = document.querySelectorAll('.author-name, #author-name, #profile-name');
+            const authorTitles = document.querySelectorAll('#author-name, #profile-name');
             authorTitles.forEach(el => el.innerText = userData.full_name || userData.username);
 
             // Role-Based UI Filtering
@@ -337,7 +354,11 @@ async function initLoginPage() {
                 if (data && data.token) {
                     localStorage.setItem('access_token', data.token);
                     localStorage.setItem('user_data', JSON.stringify(data.user));
+                    
+                    const isDeveloper = data.user.bio && (data.user.bio.includes('Role: Developer') || data.user.bio.includes('Company:'));
+                    
                     if (data.user.role_name === 'Admin') window.location.href = 'admin.html';
+                    else if (isDeveloper) window.location.href = 'developer.html';
                     else window.location.href = 'index.html';
                 }
             } catch (err) {
@@ -501,7 +522,7 @@ function createPostCard(post) {
         <div class="post-header">
             <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(post.author_name)}&background=random" alt="Author" class="avatar-medium" style="cursor:pointer;" onclick="window.location.href='profile.html?id=${post.contributor}'">
             <div class="post-meta">
-                <h4 class="author-name" style="cursor:pointer;" onclick="window.location.href='profile.html?id=${post.contributor}'">${post.author_name} <span style="font-weight: 400; color: var(--text-secondary); font-size: 14px;">tại <strong style="color: var(--text-main);">${post.region_name}${post.province ? ', ' + post.province : ''}</strong></span></h4>
+                <h4 class="post-author-name" style="cursor:pointer;" onclick="window.location.href='profile.html?id=${post.contributor}'">${post.author_name} <span style="font-weight: 400; color: var(--text-secondary); font-size: 14px;">tại <strong style="color: var(--text-main);">${post.region_name}${post.province ? ', ' + post.province : ''}</strong></span></h4>
                 <span class="post-time">${formatPostTime(post.created_at, post.updated_at)}</span>
             </div>
             <div class="post-options-container">
@@ -2823,9 +2844,9 @@ async function applyGlobalSettings() {
         if (logo) {
             const span = logo.querySelector('span');
             const link = logo.querySelector('a');
-            if (span) {
+            if (span && !window.location.pathname.includes('developer.html')) {
                 span.innerText = settings.app_name;
-            } else if (link) {
+            } else if (link && !window.location.pathname.includes('developer.html')) {
                 // If it's a link with an icon, append the name
                 const icon = link.querySelector('i');
                 link.innerHTML = '';

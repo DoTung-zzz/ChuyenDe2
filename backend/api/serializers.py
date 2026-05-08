@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report, Reaction, Follow, Notification, SystemSetting
+from .models import Role, User, Region, Post, Comment, Rating, Favorite, Report, Reaction, Follow, Notification, SystemSetting, ThirdParty, DataAccessLog
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -113,3 +113,26 @@ class SystemSettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = SystemSetting
         fields = '__all__'
+
+class ThirdPartySerializer(serializers.ModelSerializer):
+    api_key = serializers.UUIDField(read_only=True)
+    tier = serializers.CharField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    registered_at = serializers.DateTimeField(read_only=True)
+    total_requests = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ThirdParty
+        fields = ['partner_id', 'partner_name', 'partner_email', 'company',
+                  'company_size', 'role', 'api_key', 'tier', 'is_active',
+                  'registered_at', 'total_requests']
+
+    def get_total_requests(self, obj):
+        return obj.logs.count()
+
+class DataAccessLogSerializer(serializers.ModelSerializer):
+    partner_name = serializers.CharField(source='partner.partner_name', read_only=True)
+
+    class Meta:
+        model = DataAccessLog
+        fields = ['log_id', 'partner_name', 'endpoint', 'method', 'response_status', 'accessed_at']
